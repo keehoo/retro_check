@@ -6,6 +6,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
 import 'package:untitled/appwrite/appwrite.dart';
 import 'package:untitled/video_game.dart';
+import 'package:untitled/web_scrapper/web_scrapper.dart';
 
 class WidgetData {
   String? title;
@@ -17,6 +18,8 @@ Future<void> main() async {
   Hive.registerAdapter(VideoGameAdapter());
   Hive.registerAdapter(ItemsAdapter());
   Hive.registerAdapter(OffersAdapter());
+
+  WebScrapper().init();
 
   runApp(const MyApp());
   AppWriteHandler().init();
@@ -60,7 +63,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    _twitchAuth();
+    // _twitchAuth();
   }
 
   // POST: https://id.twitch.tv/oauth2/token?client_id=abcdefg12345&client_secret=hijklmn67890&grant_type=client_credentials

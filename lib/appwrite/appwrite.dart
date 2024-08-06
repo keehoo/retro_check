@@ -14,14 +14,14 @@ class AppWriteHandler {
 
     // Register User
     Account account = Account(client);
-    User usrt = await account.get();
+    // User usrt = await account.get();
 
-    final User user = await account.create(
-        userId: ID.custom("123"),
-        email: "email@example.com",
-        password: "password",
-        name: "Walter O'Brien");
-
-    print(user);
+    // final User user = await account.create(
+    //     userId: ID.custom("123"),
+    //     email: "email@example.com",
+    //     password: "password",
+    //     name: "Walter O'Brien");
+    //
+    // print(user);
   }
 }
