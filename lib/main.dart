@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
+import 'package:untitled/appwrite/appwrite.dart';
 import 'package:untitled/video_game.dart';
 
 class WidgetData {
@@ -18,6 +19,7 @@ Future<void> main() async {
   Hive.registerAdapter(OffersAdapter());
 
   runApp(const MyApp());
+  AppWriteHandler().init();
 }
 
 class MyApp extends StatelessWidget {
