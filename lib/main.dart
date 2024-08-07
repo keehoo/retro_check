@@ -1,7 +1,9 @@
 // ignore_for_file: avoid_print
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
 import 'package:untitled/appwrite/appwrite.dart';
@@ -33,10 +35,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.red),
-        useMaterial3: true,
-      ),
+      theme: appThemeData(),
       home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
   }
@@ -70,74 +69,102 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: FutureBuilder(
-                future: _getVideoGames(),
-                builder: (BuildContext context,
-                    AsyncSnapshot<List<VideoGame>> snapshot) {
-                  return ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: snapshot.data?.length ?? 0,
-                      itemBuilder: (context, index) {
-                        final Items? item =
-                            snapshot.data?[index].items?.firstOrNull;
-                        return ListTile(
-                          subtitle: Text(
-                            item?.description ?? "",
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          leading: SizedBox(
-                              width: 100,
-                              height: 100,
-                              child: _getImage(item?.images,
-                                  gameName: item?.title)),
-                          title: Text(item?.title ?? "no title"),
-                        );
-                      });
-                },
+    return Container(
+      decoration: const BoxDecoration(
+          gradient:
+              RadialGradient(radius: 2, colors: [Colors.red, Colors.black])),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          title: Text(widget.title),
+        ),
+        body: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: FutureBuilder(
+                  future: _getVideoGames(),
+                  builder: (BuildContext context,
+                      AsyncSnapshot<List<VideoGame>> snapshot) {
+                    return ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: snapshot.data?.length ?? 0,
+                        itemBuilder: (context, index) {
+                          final Items? item =
+                              snapshot.data?[index].items?.firstOrNull;
+                          return ListTile(
+                            subtitle: Text(
+                              item?.description ?? "",
+                              style: context.textStyles.bodySmall,
+                            ),
+                            leading: SizedBox(
+                                width: 100,
+                                height: 100,
+                                child: _getImage(item?.images,
+                                    gameName: item?.title)),
+                            title: Text(item?.title ?? "no title"),
+                          );
+                        });
+                  },
+                ),
               ),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                var res = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SimpleBarcodeScannerPage(),
-                    ));
-                if (res is String) {
-                  print(res);
-                  final dio = Dio();
-                  final game = await dio.request(
-                      "https://api.upcitemdb.com/prod/trial/lookup?upc=$res");
-                  final videoGame = VideoGame.fromJson(game.data);
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Color(0xffC0E8F9),
 
-                  if (videoGame.items?.isEmpty ?? true) {
-                    print("items is empty for that game");
-                    return;
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(4)),
+
+                  )
+                  // shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                  //     RoundedRectangleBorder(
+                  //         borderRadius: BorderRadius.zero,
+                  //         side: BorderSide(color: Colors.red)
+                  //     )
+
+                ),
+                onPressed: () async {
+                  var res = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SimpleBarcodeScannerPage(),
+                      ));
+                  if (res is String) {
+                    print(res);
+                    final dio = Dio();
+                    final game = await dio.request(
+                        "https://api.upcitemdb.com/prod/trial/lookup?upc=$res");
+                    final videoGame = VideoGame.fromJson(game.data);
+
+                    if (videoGame.items?.isEmpty ?? true) {
+                      print("items is empty for that game");
+                      return;
+                    }
+
+                    final gameBox = await Hive.openBox<VideoGame>("games");
+                    await gameBox.put(videoGame.items?.first.ean, videoGame);
+                    setState(() {
+                      games = gameBox.values.toList();
+                    });
+                    await gameBox.close();
                   }
-
-                  final gameBox = await Hive.openBox<VideoGame>("games");
-                  await gameBox.put(videoGame.items?.first.ean, videoGame);
-                  setState(() {
-                    games = gameBox.values.toList();
-                  });
-                  await gameBox.close();
-                }
-              },
-              child: const Text('Open Scanner'),
-            ),
-          ],
+                },
+                child: Text(
+                  'Open Scanner',
+                  style: style(context),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  TextStyle style(BuildContext context) {
+    final TextThemeCustom d = context.textStyles as TextThemeCustom;
+    return d.retroLightButtonLabel;
   }
 
   Future<List<VideoGame>> _getVideoGames() async {
@@ -211,3 +238,31 @@ class _MyHomePageState extends State<MyHomePage> {
     print(platforms.data);
   }
 }
+
+class TextThemeCustom extends TextTheme with Diagnosticable {
+  static final TextThemeCustom _singleton = TextThemeCustom._internal();
+
+  factory TextThemeCustom() {
+    return _singleton;
+  }
+
+  TextThemeCustom._internal();
+
+  TextStyle get retroLightButtonLabel =>
+      GoogleFonts.pressStart2p(color: const Color(0xfff0a202));
+}
+
+extension TextThemeExtension on BuildContext {
+  TextTheme get textStyles => textTheme();
+}
+
+ThemeData appThemeData() {
+  return ThemeData(
+      textTheme: TextThemeCustom(),
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: Colors.white,
+      ),
+      useMaterial3: true);
+}
+
+TextTheme textTheme() => TextThemeCustom();
