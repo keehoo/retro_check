@@ -2,29 +2,20 @@ part of 'game_details_cubit.dart';
 
 class GameDetailsState extends Equatable {
   final Items? item;
+  final int? index;
 
-  const GameDetailsState({this.item});
+  const GameDetailsState({this.index, this.item});
 
   @override
-  List<Object?> get props => [item];
+  List<Object?> get props => [item, index];
 
   GameDetailsState copyWith({
     Items? item,
+    int? index,
   }) {
     return GameDetailsState(
       item: item ?? this.item,
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'item': item?.toJson() ,
-    };
-  }
-
-  factory GameDetailsState.fromMap(Map<String, dynamic> map) {
-    return GameDetailsState(
-      item: map['item'] as Items,
+      index: index ?? this.index,
     );
   }
 }

@@ -10,4 +10,10 @@ class GameDetailsCubit extends Cubit<GameDetailsState> {
   void onItemChanged(Items? item) {
     emit(state.copyWith(item: item));
   }
+
+  void onIndexChanged(int destination) {
+    emit(state.copyWith(index: destination));
+  }
+
+
 }
