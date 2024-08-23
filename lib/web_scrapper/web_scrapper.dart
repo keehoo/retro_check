@@ -1,12 +1,14 @@
 import 'package:chaleno/chaleno.dart';
 
 class WebScrapper {
-  static final gameSearchQuery = "dune 2".replaceAll(" ", "+");
-  final dune2 =
+  static var gameSearchQuery = "dune 2".replaceAll(" ", "+");
+  final queryString =
       'https://www.pricecharting.com/search-products?q=$gameSearchQuery&type=prices';
 
-  Future<void> init() async {
-    final chaleno = await Chaleno().load(dune2);
+  Future<void> init({required String s}) async {
+    gameSearchQuery = s.replaceAll(" ", "+");
+
+    final chaleno = await Chaleno().load(queryString);
 
     final List<Result>? dd =
         chaleno?.getElementsByClassName("hoverable-rows sortable");

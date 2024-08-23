@@ -1,5 +1,4 @@
 import 'package:appwrite/appwrite.dart';
-import 'package:appwrite/models.dart';
 
 class AppWriteHandler {
   Future<void> init() async {

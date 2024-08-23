@@ -4,10 +4,6 @@ import 'package:hive/hive.dart';
 
 part 'video_game.g.dart';
 
-VideoGame videoGameFromJson(String str) => VideoGame.fromJson(json.decode(str));
-
-String videoGameToJson(VideoGame data) => json.encode(data.toJson());
-
 @HiveType(typeId: 1)
 class VideoGame {
   VideoGame({
