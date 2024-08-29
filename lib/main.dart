@@ -1,16 +1,17 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:hydrated_bloc/hydrated_bloc.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:untitled/appwrite/appwrite.dart';
 import 'package:untitled/generic_video_game_model.dart';
 import 'package:untitled/local_storage/video_game.dart';
 import 'package:untitled/screens/game_details/game_details_cubit.dart';
 import 'package:untitled/screens/game_details/game_details_screen.dart';
+import 'package:untitled/screens/game_input/game_input_cubit.dart';
+import 'package:untitled/screens/game_input/game_input_screen.dart';
 import 'package:untitled/screens/home_screen.dart';
 import 'package:untitled/screens/navigation_main.dart';
 
@@ -25,19 +26,12 @@ Future<void> main() async {
   Hive.registerAdapter(GamingPlatformAdapter());
   // WebScrapper().init(s: "Mortal Kombat 1");
 
-  HydratedBloc.storage = await HydratedStorage.build(
-    storageDirectory: kIsWeb
-        ? HydratedStorage.webStorageDirectory
-        : await getApplicationDocumentsDirectory(),
-  );
-
   runApp(MyApp());
   AppWriteHandler().init();
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
-final _testNavigatorKey = GlobalKey<NavigatorState>();
 
 class MyApp extends StatelessWidget {
   MyApp({super.key});
@@ -47,10 +41,23 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       routerConfig: _router,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('pl'), // Polish
+        Locale('en'), // English
+      ],
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.pink,
         ),
+        appBarTheme: AppBarTheme(
+            backgroundColor: Colors.transparent,
+            titleTextStyle: Theme.of(context).textTheme.bodyMedium),
         textTheme: TextTheme(
           displayLarge: const TextStyle(
             fontSize: 72,
@@ -62,7 +69,7 @@ class MyApp extends StatelessWidget {
             fontSize: 30,
             fontStyle: FontStyle.italic,
           ),
-          bodyMedium: GoogleFonts.merriweather(),
+          bodyMedium: GoogleFonts.merriweather().copyWith(color: Colors.white),
           displaySmall: GoogleFonts.pacifico(),
         ),
       ),
@@ -98,7 +105,17 @@ class MyApp extends StatelessWidget {
                         context.read<GameDetailsCubit>().onItemChanged(item);
                         return const NoTransitionPage(
                             child: GameDetailsScreen());
-                      })
+                      }),
+                  GoRoute(
+                      path: GameInputScreen.routeName,
+                      pageBuilder:
+                          (BuildContext context, GoRouterState routerState) {
+                        return TransitionPage(
+                            child: BlocProvider(
+                          create: (context) => GameInputCubit()..getPlatforms(),
+                          child: const GameInputScreen(),
+                        ));
+                      }),
                 ],
                 pageBuilder: (context, GoRouterState b) {
                   return const NoTransitionPage(child: HomeScreen());
@@ -152,5 +169,38 @@ class CustomNavigatorObserver extends NavigatorObserver {
   @override
   void didStopUserGesture() {
     // TODO: implement didStopUserGesture
+  }
+}
+
+/// Custom transition page with no transition.
+class TransitionPage<T> extends CustomTransitionPage<T> {
+  /// Constructor for a page with no transition functionality.
+  const TransitionPage({
+    required super.child,
+    super.name,
+    super.arguments,
+    super.restorationId,
+    super.key,
+  }) : super(
+          transitionsBuilder: _transitionsBuilder,
+          transitionDuration: const Duration(milliseconds: 500),
+          reverseTransitionDuration: const Duration(milliseconds: 500),
+        );
+
+  static Widget _transitionsBuilder(
+      BuildContext context,
+      Animation<double> animation,
+      Animation<double> secondaryAnimation,
+      Widget child) {
+    const begin = Offset(0.0, 1.0);
+    const end = Offset.zero;
+    const curve = Curves.decelerate;
+    final tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+
+    final offsetAnimation = animation.drive(tween);
+    return SlideTransition(
+      position: offsetAnimation,
+      child: child,
+    );
   }
 }

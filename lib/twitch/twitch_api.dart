@@ -75,8 +75,8 @@ final psKeywords = [
 Future<GaminPlatformsBreakdown> getGamingPlatforms() async {
   final platformsBox = await Hive.openBox<GamingPlatform>("gaming_platforms");
 
-  if (!kDebugMode && platformsBox.values.isNotEmpty) {
-    return GaminPlatformsBreakdown(platformsBox.values.toList());
+  if (platformsBox.values.isNotEmpty) {
+    return GaminPlatformsBreakdown(platforms: platformsBox.values.toList());
   }
 
   await platformsBox.clear();
@@ -107,27 +107,56 @@ Future<GaminPlatformsBreakdown> getGamingPlatforms() async {
 
   final testP = platformsBox.values.toList();
 
-  return GaminPlatformsBreakdown(testP);
+  return GaminPlatformsBreakdown(platforms: testP);
 }
 
 class GaminPlatformsBreakdown {
-  final List<GamingPlatform> platforms;
+  final List<GamingPlatform> _platforms;
 
-  GaminPlatformsBreakdown(this.platforms);
+  GaminPlatformsBreakdown({required List<GamingPlatform> platforms})
+      : _platforms = platforms;
 
-  List<GamingPlatform> get ps => platforms
+  List<GamingPlatform> getByPlatform(GamingPlatformEnum platform) =>
+      switch (platform) {
+        GamingPlatformEnum.playstation => ps,
+        GamingPlatformEnum.sega => segas,
+        GamingPlatformEnum.xbox => xboxes,
+        GamingPlatformEnum.nintendo => nintendos,
+      };
+
+  List<GamingPlatform> get all => _platforms;
+
+  List<GamingPlatform> get ps => _platforms
       .where((item) => psKeywords.contains(item.name.toLowerCase()))
       .toList();
 
-  List<GamingPlatform> get nintendos => platforms
+  List<GamingPlatform> get nintendos => _platforms
       .where((item) => nintendoKeywords.contains(item.name.toLowerCase()))
       .toList();
 
-  List<GamingPlatform> get xboxes => platforms
+  List<GamingPlatform> get xboxes => _platforms
       .where((item) => xboxKeywords.contains(item.name.toLowerCase()))
       .toList();
 
-  List<GamingPlatform> get segas => platforms
+  List<GamingPlatform> get segas => _platforms
       .where((item) => item.name.toLowerCase().contains("sega"))
       .toList();
+}
+
+enum GamingPlatformEnum {
+  playstation,
+  sega,
+  xbox,
+  nintendo;
+
+  const GamingPlatformEnum();
+
+  String getLogoAsset() => switch (this) {
+        GamingPlatformEnum.playstation =>
+          "assets/platforms/playstation/ps_logo.png",
+        GamingPlatformEnum.sega => "assets/platforms/sega/sega_logo.png",
+        GamingPlatformEnum.xbox => "assets/platforms/xbox/xbox_logo.png",
+        GamingPlatformEnum.nintendo =>
+          "assets/platforms/nintendo/nintendo_logo.png",
+      };
 }

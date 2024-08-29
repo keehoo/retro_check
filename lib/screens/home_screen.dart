@@ -1,12 +1,12 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
-import 'package:untitled/generic_video_game_model.dart';
 import 'package:untitled/local_storage/video_game.dart';
-import 'package:untitled/screens/game_details/game_details_screen.dart';
+import 'package:untitled/screens/game_input/game_input_screen.dart';
 import 'package:untitled/twitch/twitch_api.dart';
 import 'package:untitled/utils/colors/app_palette.dart';
 
@@ -28,9 +28,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-
     getGamingPlatforms();
   }
 
@@ -44,14 +42,16 @@ class _HomeScreenState extends State<HomeScreen>
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          backgroundColor: Colors.transparent,
           title: const Text(
             "App title",
           ),
           actions: [
             IconButton(
-                onPressed: () => _openGameScanner(context),
-                icon: const Icon(Icons.add_a_photo_outlined))
+                onPressed: () =>
+                    // _openGameScanner(context),
+                    context.go("/${GameInputScreen.routeName}"),
+
+        icon: const Icon(Icons.add_a_photo_outlined))
           ],
         ),
         body: SafeArea(
@@ -74,29 +74,12 @@ class _HomeScreenState extends State<HomeScreen>
                                 snapshot.data?[index].items?.firstOrNull;
                             return ListTile(
                               onTap: () {
-                                context.go("/${GameDetailsScreen.routeName}", extra: item);
+                                context.go("/${GameInputScreen.routeName}");
                               },
                               subtitle: Text(
                                 item?.description ?? "",
                               ),
-                              // leading: GestureDetector(
-                              //   onTap: () async {
-                              //     final devSize = MediaQuery.of(context).size;
-                              //     // final ImagePicker picker = ImagePicker();
-                              //     // final XFile? image = await picker.pickImage(
-                              //     //     source: ImageSource.camera,
-                              //     //     maxHeight: devSize.height / 2,
-                              //     //     maxWidth: devSize.width / 2);
-                              //     //
-                              //     // _onUpdateGameImage(
-                              //     //     item, image, snapshot.data);
-                              //   },
-                              //   child: SizedBox(
-                              //       width: 100,
-                              //       height: 100,
-                              //       child: _getImage(item?.images,
-                              //           gameName: item?.title)),
-                              // ),
+
                               title: Text(item?.title ?? "no title"),
                             );
                           }),
@@ -104,7 +87,6 @@ class _HomeScreenState extends State<HomeScreen>
                   },
                 ),
               ),
-
             ],
           ),
         ),
@@ -112,41 +94,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Future<void> _openGameScanner(BuildContext context) async {
-    var res = await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const SimpleBarcodeScannerPage(),
-        ));
-    if (res is String) {
-      print(res);
-      final dio = Dio();
-      final game = await dio
-          .request("https://api.upcitemdb.com/prod/trial/lookup?upc=$res");
-      final videoGame = VideoGame.fromJson(game.data);
 
-      if (videoGame.items?.isEmpty ?? true) {
-        print("items is empty for that game");
-        return;
-      }
-      // if (!context.mounted) return;
-      final Iterable<GamingPlatform> platformsBox =
-          (await Hive.openBox<GamingPlatform>("gaming_platforms"))
-              .values
-              .toSet();
-      // final possiblePlatformNames =
-      //     (videoGame.items?.first.title?.split(" ") ?? []);
-
-      if (!context.mounted) return;
-
-      final gameBox = await Hive.openBox<VideoGame>("games");
-      await gameBox.put(videoGame.items?.first.ean, videoGame);
-      setState(() {
-        games = gameBox.values.toList();
-      });
-      await gameBox.close();
-    }
-  }
 
   Future<List<VideoGame>> _getVideoGames() async {
     final List<VideoGame> games = [];
@@ -161,12 +109,12 @@ class _HomeScreenState extends State<HomeScreen>
 
     const _ = "814a5e5f9ec961b208b89668f557e4c82f1aecc7"; //gianBompApiKey
 
-    if (images == null || images.isEmpty) {
+    if (images == null || images.isEmpty ) {
       return const Icon(Icons.camera_alt_outlined);
     } else {
-      return Image.network(
-        images.first,
-        errorBuilder: (_, __, ___) {
+      return CachedNetworkImage(
+        imageUrl: images.first,
+        errorWidget: (_, __, ___) {
           return const Icon(Icons.no_photography_outlined);
         },
       );
@@ -175,5 +123,44 @@ class _HomeScreenState extends State<HomeScreen>
 
   void _onUpdateGameImage(Items? item, XFile? image, List<VideoGame>? data) {
     print("${item?.title}");
+  }
+}
+
+Future<String?> openGameEanScanner(BuildContext context) async {
+  var res = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const SimpleBarcodeScannerPage(),
+      ));
+  if (res is String) {
+    print(res);
+    final dio = Dio();
+    final game = await dio
+        .request("https://api.upcitemdb.com/prod/trial/lookup?upc=$res");
+    final videoGame = VideoGame.fromJson(game.data);
+
+    if (videoGame.items?.isEmpty ?? true) {
+      print("items is empty for that game");
+      return null;
+    }
+    // if (!context.mounted) return;
+    // final Iterable<GamingPlatform> platformsBox =
+    //     (await Hive.openBox<GamingPlatform>("gaming_platforms"))
+    //         .values
+    //         .toSet();
+    // final possiblePlatformNames =
+    //     (videoGame.items?.first.title?.split(" ") ?? []);
+
+    if (!context.mounted) return null;
+
+    final gameBox = await Hive.openBox<VideoGame>("games");
+    await gameBox.put(videoGame.items?.first.ean, videoGame);
+    // setState(() {
+    //   games = gameBox.values.toList();
+    // });
+    await gameBox.close();
+    return res;
+  } else {
+    return null;
   }
 }

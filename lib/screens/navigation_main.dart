@@ -12,15 +12,17 @@ class NavigationMain extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       bottomNavigationBar: BlocBuilder<GameDetailsCubit, GameDetailsState>(
-        buildWhen: (p, c) => p.index != c.index,
+        buildWhen: _hasIndexChanged,
         builder: (context, state) {
           return NavigationBar(
             selectedIndex: state.index ?? 0,
             onDestinationSelected: (destination) {
+              /// TODO: https://medium.com/@wartelski/how-to-flutter-save-the-page-state-using-gorouter-in-sidemenu-c69b9313b7f2
+              /// ShellRoute isn't enough to presereve the state of each branch.
               context.read<GameDetailsCubit>().onIndexChanged(destination);
               switch (destination) {
                 case 0:
-                  context.push(
+                  context.go(
                     GoRouterState.of(context).matchedLocation,
                   );
                   break;
@@ -47,15 +49,5 @@ class NavigationMain extends StatelessWidget {
     );
   }
 
-  int _getIndexBasedOnLocation(String location) {
-    if (location.startsWith("/b")) {
-      return 1;
-    }
-
-    if (location.startsWith("/c")) {
-      return 2;
-    }
-
-    return 0;
-  }
+  bool _hasIndexChanged(p, c) => p.index != c.index;
 }
