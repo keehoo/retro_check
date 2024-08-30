@@ -17,6 +17,7 @@ class VideoGameModelAdapter extends TypeAdapter<VideoGameModel> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return VideoGameModel(
+      uuid: fields[7] as String?,
       title: fields[1] as String,
       description: fields[2] as String?,
       platform: fields[3] as GamingPlatform,
@@ -29,7 +30,7 @@ class VideoGameModelAdapter extends TypeAdapter<VideoGameModel> {
   @override
   void write(BinaryWriter writer, VideoGameModel obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(7)
       ..writeByte(1)
       ..write(obj.title)
       ..writeByte(2)
@@ -41,7 +42,9 @@ class VideoGameModelAdapter extends TypeAdapter<VideoGameModel> {
       ..writeByte(5)
       ..write(obj.imageUrl)
       ..writeByte(6)
-      ..write(obj.imageBase64);
+      ..write(obj.imageBase64)
+      ..writeByte(7)
+      ..write(obj.uuid);
   }
 
   @override

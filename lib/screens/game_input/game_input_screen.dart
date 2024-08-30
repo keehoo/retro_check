@@ -5,13 +5,16 @@ import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:untitled/appwrite/appwrite.dart';
 import 'package:untitled/ext/context_ext.dart';
 import 'package:untitled/generic_video_game_model.dart';
-import 'package:untitled/local_storage/video_game.dart';
 import 'package:untitled/screens/game_input/game_input_cubit.dart';
 import 'package:untitled/screens/home_screen.dart';
 import 'package:untitled/twitch/twitch_api.dart';
+import 'package:untitled/utils/image_helpers/image_helpers.dart';
+import 'package:uuid/v4.dart';
 
 const edgeInsets = EdgeInsets.symmetric(horizontal: 16, vertical: 8);
 
@@ -51,7 +54,14 @@ class GameInputScreen extends StatelessWidget {
                     context.read<GameInputCubit>().onImageFileSelected(file);
                   });
                 },
-                child: PicturePlaceholder(title: context.strings.add_picture)),
+                child: BlocBuilder<GameInputCubit, GameInputState>(
+                  buildWhen: (p, c) => p.image != c.image,
+                  builder: (context, state) {
+                    return state.image == null
+                        ? PicturePlaceholder(title: context.strings.add_picture)
+                        : Image.file(state.image!);
+                  },
+                )),
           ),
           Padding(
             padding: edgeInsets,
@@ -130,46 +140,73 @@ class GameInputScreen extends StatelessWidget {
           BlocBuilder<GameInputCubit, GameInputState>(
             builder: (context, state) {
               return GestureDetector(
-                onTap: () {
-                  Items game = Items(
-                    ean: state.ean,
-                    title: state.gameTitle,
+                onTap: () async {
+                  /// move below to cubit
+                  String gameUuid = const UuidV4().generate();
+                  final imageUrl = await AppWriteHandler()
+                      .storeGameImage(state.image!, gameUuid);
+                  final Uint8List? imageBytes =
+                      await state.image?.readAsBytes();
 
-                  );
+                  VideoGameModel game = VideoGameModel(
+                      uuid: gameUuid,
+                      title: state.gameTitle ?? "",
+                      description: null,
+                      platform: state.platform ??
+                          GamingPlatform(twitchiId: "-1", name: "Unknown"),
+                      ean: state.ean,
+                      imageUrl: imageUrl,
+                      imageBase64: base64String(imageBytes!));
+
+                  await putGameInLocalDataBase(game);
+
+                  AppWriteHandler().saveGameInDatabase(game);
+                  if (!context.mounted) return;
+                  Navigator.of(context).pop();
                 },
-                child: Padding(
-                  padding: edgeInsets,
-                  child: Card(
-                    borderOnForeground: false,
-                    surfaceTintColor:
-                        context.read<GameInputCubit>().isAllValid()
-                            ? Colors.lightGreen
-                            : Colors.transparent,
-                    elevation:
-                        context.read<GameInputCubit>().isAllValid() ? 16 : 0,
-                    child: ListTile(
-                      title: Text(
-                        state.gameTitle ?? "",
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                      subtitle: Text("${state.platform?.name}"),
-                      trailing: context.read<GameInputCubit>().isAllValid()
-                          ? const Icon(Icons.chevron_right_outlined)
-                          : null,
-                      leading: state.image == null
-                          ? const SizedBox.shrink()
-                          : AnimatedContainer(
-                              duration: const Duration(seconds: 1),
-                              child: Image.file(state.image!)),
-                    ),
-                  ),
-                ),
+                child: context.read<GameInputCubit>().isAllValid()
+                    ? Padding(
+                        padding: edgeInsets,
+                        child: Card(
+                          borderOnForeground: false,
+                          surfaceTintColor:
+                              context.read<GameInputCubit>().isAllValid()
+                                  ? Colors.lightGreen
+                                  : Colors.transparent,
+                          elevation: context.read<GameInputCubit>().isAllValid()
+                              ? 16
+                              : 0,
+                          child: ListTile(
+                            title: Text(
+                              state.gameTitle ?? "",
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
+                            subtitle: Text(state.platform?.name ?? ""),
+                            trailing:
+                                context.read<GameInputCubit>().isAllValid()
+                                    ? const Icon(Icons.chevron_right_outlined)
+                                    : null,
+                            leading: state.image == null
+                                ? const SizedBox.shrink()
+                                : AnimatedContainer(
+                                    duration: const Duration(seconds: 1),
+                                    child: Image.file(state.image!)),
+                          ),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
               );
             },
           )
         ],
       ),
     );
+  }
+
+  Future<void> putGameInLocalDataBase(VideoGameModel game) async {
+    final gameBox = await Hive.openBox<VideoGameModel>("games");
+    await gameBox.add(game);
+    await gameBox.close();
   }
 
   Future<void> _openCamera(
@@ -184,6 +221,7 @@ class GameInputScreen extends StatelessWidget {
 
     final Uint8List? imageBytes = await imageFile?.readAsBytes();
     final file = io.File(imageFile?.path ?? "");
+
     file.writeAsBytes(imageBytes?.toList() ?? []);
     onImageFileSelected(file);
   }
