@@ -121,6 +121,8 @@ class GaminPlatformsBreakdown {
         GamingPlatformEnum.sega => segas,
         GamingPlatformEnum.xbox => xboxes,
         GamingPlatformEnum.nintendo => nintendos,
+        // TODO: Handle this case.
+        GamingPlatformEnum.unknown => throw UnimplementedError(),
       };
 
   List<GamingPlatform> get all => _platforms;
@@ -146,7 +148,8 @@ enum GamingPlatformEnum {
   playstation,
   sega,
   xbox,
-  nintendo;
+  nintendo,
+  unknown;
 
   const GamingPlatformEnum();
 
@@ -157,5 +160,21 @@ enum GamingPlatformEnum {
         GamingPlatformEnum.xbox => "assets/platforms/xbox/xbox_logo.png",
         GamingPlatformEnum.nintendo =>
           "assets/platforms/nintendo/nintendo_logo.png",
+        _ => "assets/platforms/unknown/unknown_game.jpg",
       };
+}
+
+class GamingPlatformEnumAdapter extends TypeAdapter<GamingPlatformEnum> {
+  @override
+  final typeId = 6;
+
+  @override
+  GamingPlatformEnum read(BinaryReader reader) {
+    return GamingPlatformEnum.values[reader.read() as int];
+  }
+
+  @override
+  void write(BinaryWriter writer, GamingPlatformEnum obj) {
+    writer.write(obj.index);
+  }
 }

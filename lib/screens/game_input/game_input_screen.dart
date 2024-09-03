@@ -98,6 +98,7 @@ class GameInputScreen extends StatelessWidget {
                   ? const SizedBox.shrink()
                   : PlatformSelectorWidget(
                       onPlatformSelected: (GamingPlatformEnum platform) {
+                        context.read<GameInputCubit>().onGaminPlatormEnumUpdated(platform);
                         showModalBottomSheet(
                             context: cubitContext,
                             builder: (context) {
@@ -155,8 +156,9 @@ class GameInputScreen extends StatelessWidget {
                       platform: state.platform ??
                           GamingPlatform(twitchiId: "-1", name: "Unknown"),
                       ean: state.ean,
+
                       imageUrl: imageUrl,
-                      imageBase64: base64String(imageBytes!));
+                      imageBase64: base64String(imageBytes!), gamingPlatformEnum: state.platformEnum!, numberOfCopiesOwned: 1);
 
                   await putGameInLocalDataBase(game);
 

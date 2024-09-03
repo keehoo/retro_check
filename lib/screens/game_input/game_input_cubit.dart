@@ -31,9 +31,14 @@ class GameInputCubit extends Cubit<GameInputState> {
   bool isAllValid() =>
       !state.gameTitle.isNullOrEmpty() &&
       state.image != null &&
+      state.platformEnum != null &&
       state.platform != null;
 
   void onEanUpdated(String? ean) {
     emit(state.copyWith(ean: ean));
+  }
+
+  void onGaminPlatormEnumUpdated(GamingPlatformEnum platform) {
+    emit(state.copyWith(platformEnum: platform));
   }
 }

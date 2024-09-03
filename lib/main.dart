@@ -14,6 +14,7 @@ import 'package:untitled/screens/game_input/game_input_cubit.dart';
 import 'package:untitled/screens/game_input/game_input_screen.dart';
 import 'package:untitled/screens/home_screen.dart';
 import 'package:untitled/screens/navigation_main.dart';
+import 'package:untitled/twitch/twitch_api.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,6 +25,8 @@ Future<void> main() async {
   Hive.registerAdapter(OffersAdapter());
   Hive.registerAdapter(VideoGameModelAdapter());
   Hive.registerAdapter(GamingPlatformAdapter());
+  Hive.registerAdapter(GamingPlatformEnumAdapter());
+
   // WebScrapper().init(s: "Mortal Kombat 1");
 
   runApp(MyApp());
