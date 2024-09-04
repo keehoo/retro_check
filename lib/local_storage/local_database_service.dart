@@ -14,7 +14,7 @@ class LocalDatabaseService {
   Future<void> updateBase64ImageForGame(
       VideoGameModel game, String gameBase64String) async {
     VideoGameModel updatedGame =
-        game.copyWithBase64Image(imageBase64: gameBase64String);
+        game.copyWithBase64Image(imageBase64: gameBase64String, imageUrl: null);
     final Box<VideoGameModel> gameBox =
         await Hive.openBox<VideoGameModel>("games");
     await gameBox.put(updatedGame.uuid, updatedGame);

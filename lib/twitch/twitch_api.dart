@@ -5,72 +5,6 @@ import 'package:untitled/generic_video_game_model.dart';
 const twitchClientId = "7ye79qmkzxt2w2w1p42pzk2righnqv";
 const twitchClientSecret = "j6766v8gdnbbcq6yrf0b2hu90y9j0m";
 
-final xboxKeywords = [
-  "xbox",
-  "microsoft",
-  "xbox360",
-  "xbox 360",
-  "xbox one",
-  "series s",
-  "series x",
-  "xbox series x|s"
-];
-
-final nintendoKeywords = [
-  "n66",
-  "gameboy",
-  "game boy",
-  "game boy color",
-  "nintendo",
-  "nintendo switch",
-  "super famicon",
-  "famicon"
-      "ngc",
-  "gamecube",
-  "nintendo gamecube",
-  "nintendo entertainment system",
-  "super nintendo entertainment system",
-  "super nintendo",
-  "nintendo 64",
-  "nintendo 64dd",
-  "game cube",
-  "wii",
-  "wii u",
-  "game & watch",
-  "nes",
-  "nintendo ds",
-  "nintendo dsi",
-  "super nintendo entertainment system",
-  "nintendo 3ds",
-  "nes",
-  "virtual boy",
-  "ds",
-  "3ds"
-];
-
-final psKeywords = [
-  "vita",
-  "playstation vita",
-  "ps vita",
-  "playstation",
-  "playstation vr",
-  "playstation vr2",
-  "playstation 1",
-  "playstation 2",
-  "playstation 3",
-  "playstation 4",
-  "playstation 5",
-  "ps1",
-  "ps2",
-  "ps3",
-  "ps4",
-  "psx",
-  "ps5",
-  "psp",
-  "portable",
-  "playstation portable",
-];
-
 Future<GaminPlatformsBreakdown> getGamingPlatforms() async {
   final platformsBox = await Hive.openBox<GamingPlatform>("gaming_platforms");
 
@@ -99,7 +33,10 @@ Future<GaminPlatformsBreakdown> getGamingPlatforms() async {
   final Map<dynamic, dynamic> d = Map.fromEntries(platformsString);
 
   final List<GamingPlatform> plats = d.entries
-      .map((a) => GamingPlatform(twitchiId: a.key, name: a.value))
+      .map((a) => GamingPlatform(
+          twitchiId: a.key,
+          name: a.value,
+          commonNames: _getCommonNamesFor(a.value as String)))
       .toList();
 
   await platformsBox.addAll(plats);
@@ -109,72 +46,85 @@ Future<GaminPlatformsBreakdown> getGamingPlatforms() async {
   return GaminPlatformsBreakdown(platforms: testP);
 }
 
-class GaminPlatformsBreakdown {
-  final List<GamingPlatform> _platforms;
+List<String> _getCommonNamesFor(String value) {
+  final String platformTwitchName = value.toLowerCase().trim();
 
-  GaminPlatformsBreakdown({required List<GamingPlatform> platforms})
-      : _platforms = platforms;
+  switch (platformTwitchName) {
+    case "playstation 3":
+      return ["ps3", "playstation 3"];
+    case "playstation 4":
+      return ["ps4", "playstation 4"];
+    case "playstation 5":
+      return ["ps5", "playstation 5"];
+    case "playstation 2":
+      return ["ps2", "playstation 2"];
+    case "playstation":
+      return ["ps1", "psx", "playstation", "playstation 1"];
+    case "playstation portable":
+      return ["psp", "playstation portable"];
+    case "playstation vita":
+      return ["ps vita", "playstation vita"];
 
-  List<GamingPlatform> getByPlatform(GamingPlatformEnum platform) =>
-      switch (platform) {
-        GamingPlatformEnum.playstation => ps,
-        GamingPlatformEnum.sega => segas,
-        GamingPlatformEnum.xbox => xboxes,
-        GamingPlatformEnum.nintendo => nintendos,
-        // TODO: Handle this case.
-        GamingPlatformEnum.unknown => throw UnimplementedError(),
-      };
+    // Nintendo Consoles
+    case "nintendo entertainment system":
+      return ["nes", "nintendo entertainment system"];
+    case "super nintendo entertainment system":
+      return ["snes", "super nintendo", "super nintendo entertainment system"];
+    case "nintendo 64":
+      return ["n64", "nintendo 64"];
+    case "gamecube":
+      return ["gc", "gamecube", "nintendo gamecube"];
+    case "wii":
+      return ["wii"];
+    case "wii u":
+      return ["wii u"];
+    case "nintendo switch":
+      return ["switch", "nintendo switch"];
+    case "game boy":
+      return ["gb", "game boy"];
+    case "game boy color":
+      return ["gbc", "game boy color"];
+    case "game boy advance":
+      return ["gba", "game boy advance"];
+    case "nintendo ds":
+      return ["ds", "nintendo ds"];
+    case "nintendo 3ds":
+      return ["3ds", "nintendo 3ds"];
 
-  List<GamingPlatform> get all => _platforms;
+    // Xbox Consoles
+    case "xbox":
+      return ["xbox", "original xbox"];
+    case "xbox 360":
+      return ["xbox 360", "360", "x360"];
+    case "xbox one":
+      return ["xbox one", "xbox 1"];
+    case "xbox series x":
+      return ["xbox series x"];
+    case "xbox series s":
+      return ["xbox series s"];
+    case "xbox series x|s":
+      return ["xbox series x|s"];
 
-  List<GamingPlatform> get ps => _platforms
-      .where((item) => psKeywords.contains(item.name.toLowerCase()))
-      .toList();
+    // Sega Consoles
+    case "sega genesis":
+      return [
+        "genesis",
+        "sega genesis",
+      ];
+    case "sega saturn":
+      return ["saturn", "sega saturn"];
+    case "sega dreamcast":
+      return ["dreamcast", "sega dreamcast"];
+    case "sega master system":
+      return ["master system", "sega master system"];
+    case "sega game gear":
+      return ["game gear", "sega game gear"];
+    case "sega cd":
+      return ["sega cd", "mega cd"];
+    case "sega 32x":
+      return ["32x", "sega 32x"];
 
-  List<GamingPlatform> get nintendos => _platforms
-      .where((item) => nintendoKeywords.contains(item.name.toLowerCase()))
-      .toList();
-
-  List<GamingPlatform> get xboxes => _platforms
-      .where((item) => xboxKeywords.contains(item.name.toLowerCase()))
-      .toList();
-
-  List<GamingPlatform> get segas => _platforms
-      .where((item) => item.name.toLowerCase().contains("sega"))
-      .toList();
-}
-
-enum GamingPlatformEnum {
-  playstation,
-  sega,
-  xbox,
-  nintendo,
-  unknown;
-
-  const GamingPlatformEnum();
-
-  String getLogoAsset() => switch (this) {
-        GamingPlatformEnum.playstation =>
-          "assets/platforms/playstation/ps_logo.png",
-        GamingPlatformEnum.sega => "assets/platforms/sega/sega_logo.png",
-        GamingPlatformEnum.xbox => "assets/platforms/xbox/xbox_logo.png",
-        GamingPlatformEnum.nintendo =>
-          "assets/platforms/nintendo/nintendo_logo.png",
-        _ => "assets/platforms/unknown/unknown_game.jpg",
-      };
-}
-
-class GamingPlatformEnumAdapter extends TypeAdapter<GamingPlatformEnum> {
-  @override
-  final typeId = 6;
-
-  @override
-  GamingPlatformEnum read(BinaryReader reader) {
-    return GamingPlatformEnum.values[reader.read() as int];
-  }
-
-  @override
-  void write(BinaryWriter writer, GamingPlatformEnum obj) {
-    writer.write(obj.index);
+    default:
+      return [];
   }
 }

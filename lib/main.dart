@@ -15,6 +15,7 @@ import 'package:untitled/screens/game_input/game_input_screen.dart';
 import 'package:untitled/screens/home_screen.dart';
 import 'package:untitled/screens/navigation_main.dart';
 import 'package:untitled/twitch/twitch_api.dart';
+import 'package:untitled/web_scrapper/web_scrapper.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,8 +27,8 @@ Future<void> main() async {
   Hive.registerAdapter(VideoGameModelAdapter());
   Hive.registerAdapter(GamingPlatformAdapter());
   Hive.registerAdapter(GamingPlatformEnumAdapter());
-
-  // WebScrapper().init(s: "Mortal Kombat 1");
+final d=
+  await WebScrapper().searchByQuery(s: "Double Pack Assassins Creed Brotherhood (uk Import) Dvd");
 
   runApp(MyApp());
   AppWriteHandler().init();

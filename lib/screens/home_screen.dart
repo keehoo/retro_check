@@ -17,6 +17,7 @@ import 'package:untitled/twitch/twitch_api.dart';
 import 'package:untitled/utils/colors/app_palette.dart';
 import 'package:untitled/utils/image_helpers/image_helpers.dart';
 import 'package:untitled/utils/typedefs/typedefs.dart';
+import 'package:untitled/web_scrapper/web_scrapper.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -120,6 +121,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             return Padding(
                               padding: const EdgeInsets.all(8.0),
                               child: Card(
+                                elevation: 8,
                                 surfaceTintColor: Colors.blueGrey,
                                 child: ListTile(
                                   onTap: () {
@@ -129,36 +131,52 @@ class _HomeScreenState extends State<HomeScreen> {
                                     item?.description ?? "",
                                     maxLines: 2,
                                   ),
+                                  trailing: item?.gamingPlatformEnum != null
+                                      ? SizedBox(
+                                          height: 75,
+                                          width: 50,
+                                          child: Image.asset(
+                                            item!.gamingPlatformEnum
+                                                .getLogoAsset(),
+                                          ),
+                                        )
+                                      : const SizedBox.shrink(),
                                   leading: item == null
                                       ? null
-                                      : Stack(
-                                          children: [
-                                            Badge(
-                                             backgroundColor: Colors.green,
-                                              label: Text(
-                                                  "${item.numberOfCopiesOwned}"),
-                                            ),
-                                            _getImage(item,
-                                                onWantsToUpdatePhoto:
-                                                    (game) async {
-                                              final XFile? image =
-                                                  await ImagePicker().pickImage(
-                                                      source:
-                                                          ImageSource.camera);
-                                              final imageBytes =
-                                                  await image?.readAsBytes();
-                                              if (imageBytes == null) return;
-                                              final gameBase64String =
-                                                  base64String(imageBytes);
-                                              await LocalDatabaseService()
-                                                  .updateBase64ImageForGame(
-                                                      game, gameBase64String);
-                                              AppWriteHandler().updatePictureOf(
-                                                  File(image!.path),
-                                                  gameBase64String,
-                                                  game);
-                                            })
-                                          ],
+                                      : SizedBox(
+                                          height: 75,
+                                          width: 50,
+                                          child: Stack(
+                                            children: [
+                                              Badge(
+                                                backgroundColor: Colors.green,
+                                                label: Text(
+                                                    "${item.numberOfCopiesOwned}"),
+                                              ),
+                                              _getImage(item,
+                                                  onWantsToUpdatePhoto:
+                                                      (game) async {
+                                                final XFile? image =
+                                                    await ImagePicker()
+                                                        .pickImage(
+                                                            source: ImageSource
+                                                                .camera);
+                                                final imageBytes =
+                                                    await image?.readAsBytes();
+                                                if (imageBytes == null) return;
+                                                final gameBase64String =
+                                                    base64String(imageBytes);
+                                                await LocalDatabaseService()
+                                                    .updateBase64ImageForGame(
+                                                        game, gameBase64String);
+                                                AppWriteHandler()
+                                                    .updatePictureOf(
+                                                        File(image!.path),
+                                                        gameBase64String,
+                                                        game);
+                                              }),
+                                            ],
+                                          ),
                                         ),
                                   title: Text(item?.title ?? "no title"),
                                 ),
@@ -228,11 +246,23 @@ Future<String?> openGameEanScanner(BuildContext context,
       print("items is empty for that game");
       return null;
     }
-    print(videoGame.items?.map((e) => e.title).join(", "));
 
     if (!context.mounted) return null;
 
-    final gameModel = VideoGameModel.fromItems(videoGame.items!.first);
+    final GaminPlatformsBreakdown gamingPlatforms = await getGamingPlatforms();
+
+    GamingPlatformEnum platformEnum = gamingPlatforms
+        .getPlatformEnumFromTitle(videoGame.items?.first.title?.toLowerCase().removeNonAlphanumericButKeepSpaces(), videoGame.items?.first);
+
+    print("Platform enum: ${platformEnum.name}");
+
+    GamingPlatform? platform = gamingPlatforms
+        .getPlatformFromTitle(videoGame.items?.first.title?.removeNonAlphanumericButKeepSpaces().toLowerCase(), videoGame.items?.first.description?.removeNonAlphanumericButKeepSpaces().toLowerCase());
+
+    print("Platform specific: ${platform?.name}");
+
+    var gameModel = VideoGameModel.fromItems(videoGame.items!.first,
+        gamingPlatform: platform, platformEnum: platformEnum);
 
     final gameBox = await Hive.openBox<VideoGameModel>("games");
 

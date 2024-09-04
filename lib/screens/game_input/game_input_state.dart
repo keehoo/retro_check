@@ -12,7 +12,8 @@ class GameInputState extends Equatable {
       this.ean, this.image, this.allPlatforms, this.gameTitle, this.platform});
 
   @override
-  List<Object?> get props => [gameTitle, platform, platformEnum, allPlatforms, image, ean];
+  List<Object?> get props => [gameTitle, platform, platformEnum,
+    allPlatforms, image, ean];
 
   GameInputState copyWith({
     String? gameTitle,

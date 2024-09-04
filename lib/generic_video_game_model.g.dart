@@ -22,7 +22,7 @@ class VideoGameModelAdapter extends TypeAdapter<VideoGameModel> {
       numberOfCopiesOwned: fields[9] as int,
       title: fields[1] as String,
       description: fields[2] as String?,
-      platform: fields[3] as GamingPlatform,
+      platform: fields[3] as GamingPlatform?,
       ean: fields[4] as String?,
       imageUrl: fields[5] as String?,
       imageBase64: fields[6] as String?,
@@ -75,6 +75,7 @@ class GamingPlatformAdapter extends TypeAdapter<GamingPlatform> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return GamingPlatform(
+      commonNames: (fields[3] as List).cast<String>(),
       twitchiId: fields[1] as String,
       name: fields[2] as String,
     );
@@ -83,11 +84,13 @@ class GamingPlatformAdapter extends TypeAdapter<GamingPlatform> {
   @override
   void write(BinaryWriter writer, GamingPlatform obj) {
     writer
-      ..writeByte(2)
+      ..writeByte(3)
       ..writeByte(1)
       ..write(obj.twitchiId)
       ..writeByte(2)
-      ..write(obj.name);
+      ..write(obj.name)
+      ..writeByte(3)
+      ..write(obj.commonNames);
   }
 
   @override

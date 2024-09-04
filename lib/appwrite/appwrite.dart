@@ -29,10 +29,12 @@ class AppWriteHandler {
             .setSelfSigned() // Use only on dev mode with a self-signed SSL cert
         ;
 
-    final account = Account(client!);
+    // final account = Account(client!);
+    // final Session session = await account.getSession(sessionId: "1");
+
 
     // await account.deleteSessions();
-    final user = await account.createAnonymousSession();
+    // final user = await account.createAnonymousSession();
     // final User user = await account.create(
     //     userId: ID.custom("123"),
     //     email: "email@example.com",
@@ -40,7 +42,7 @@ class AppWriteHandler {
     //     name: "Walter O'Brien");
     //
 
-    print(user);
+    // print(user);
   }
 
   Future<List<Document>> getAllVideoGames() async {
