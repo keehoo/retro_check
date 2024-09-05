@@ -1,21 +1,18 @@
 part of 'game_details_cubit.dart';
 
 class GameDetailsState extends Equatable {
-  final Items? item;
-  final int? index;
+  const GameDetailsState({this.videoGameModel});
 
-  const GameDetailsState({this.index, this.item});
+  final VideoGameModel? videoGameModel;
 
   @override
-  List<Object?> get props => [item, index];
+  List<Object?> get props => [videoGameModel];
 
   GameDetailsState copyWith({
-    Items? item,
-    int? index,
+    VideoGameModel? videoGameModel,
   }) {
     return GameDetailsState(
-      item: item ?? this.item,
-      index: index ?? this.index,
+      videoGameModel: videoGameModel ?? this.videoGameModel,
     );
   }
 }

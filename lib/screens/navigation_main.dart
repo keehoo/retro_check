@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:untitled/screens/game_details/game_details_cubit.dart';
+import 'package:untitled/screens/games_tab_navigation_cubit.dart';
 
 class NavigationMain extends StatelessWidget {
   const NavigationMain({super.key, required this.child});
@@ -11,7 +11,7 @@ class NavigationMain extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      bottomNavigationBar: BlocBuilder<GameDetailsCubit, GameDetailsState>(
+      bottomNavigationBar: BlocBuilder<GamesTabNavigationCubit, GamesTabNavigationState>(
         buildWhen: _hasIndexChanged,
         builder: (context, state) {
           return NavigationBar(
@@ -19,7 +19,7 @@ class NavigationMain extends StatelessWidget {
             onDestinationSelected: (destination) {
               /// TODO: https://medium.com/@wartelski/how-to-flutter-save-the-page-state-using-gorouter-in-sidemenu-c69b9313b7f2
               /// ShellRoute isn't enough to presereve the state of each branch.
-              context.read<GameDetailsCubit>().onIndexChanged(destination);
+              context.read<GamesTabNavigationCubit>().onIndexChanged(destination);
               switch (destination) {
                 case 0:
                   context.go(

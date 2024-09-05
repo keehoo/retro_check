@@ -12,12 +12,12 @@ import 'package:untitled/ext/string_ext.dart';
 import 'package:untitled/generic_video_game_model.dart';
 import 'package:untitled/local_storage/local_database_service.dart';
 import 'package:untitled/local_storage/video_game.dart';
+import 'package:untitled/screens/game_details/game_details_screen.dart';
 import 'package:untitled/screens/game_input/game_input_screen.dart';
 import 'package:untitled/twitch/twitch_api.dart';
 import 'package:untitled/utils/colors/app_palette.dart';
 import 'package:untitled/utils/image_helpers/image_helpers.dart';
 import 'package:untitled/utils/typedefs/typedefs.dart';
-import 'package:untitled/web_scrapper/web_scrapper.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -67,16 +67,15 @@ class _HomeScreenState extends State<HomeScreen> {
                               actions: [
                                 ElevatedButton(
                                     onPressed: () async {
-                                      await LocalDatabaseService()
-                                          .updateLocalDbGame(
-                                              game.withAdditionalCopy());
-
-                                      final dd = await LocalDatabaseService()
-                                          .getVideoGames();
+                                      final db = LocalDatabaseService();
+                                      await db.updateLocalDbGame(
+                                          game.withAdditionalCopy());
+                                      final videoGames =
+                                          await db.getVideoGames();
                                       if (!context.mounted) return;
                                       context.pop();
                                       setState(() {
-                                        games = dd;
+                                        games = videoGames;
                                       });
                                     },
                                     child: const Text("yes")),
@@ -125,7 +124,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 surfaceTintColor: Colors.blueGrey,
                                 child: ListTile(
                                   onTap: () {
-                                    context.go("/${GameInputScreen.routeName}");
+                                    context
+                                        .go("/${GameDetailsScreen.routeName}", extra: item);
                                   },
                                   subtitle: Text(
                                     item?.description ?? "",
@@ -251,13 +251,21 @@ Future<String?> openGameEanScanner(BuildContext context,
 
     final GaminPlatformsBreakdown gamingPlatforms = await getGamingPlatforms();
 
-    GamingPlatformEnum platformEnum = gamingPlatforms
-        .getPlatformEnumFromTitle(videoGame.items?.first.title?.toLowerCase().removeNonAlphanumericButKeepSpaces(), videoGame.items?.first);
+    GamingPlatformEnum platformEnum = gamingPlatforms.getPlatformEnumFromTitle(
+        videoGame.items?.first.title
+            ?.toLowerCase()
+            .removeNonAlphanumericButKeepSpaces(),
+        videoGame.items?.first);
 
     print("Platform enum: ${platformEnum.name}");
 
-    GamingPlatform? platform = gamingPlatforms
-        .getPlatformFromTitle(videoGame.items?.first.title?.removeNonAlphanumericButKeepSpaces().toLowerCase(), videoGame.items?.first.description?.removeNonAlphanumericButKeepSpaces().toLowerCase());
+    GamingPlatform? platform = gamingPlatforms.getPlatformFromTitle(
+        videoGame.items?.first.title
+            ?.removeNonAlphanumericButKeepSpaces()
+            .toLowerCase(),
+        videoGame.items?.first.description
+            ?.removeNonAlphanumericButKeepSpaces()
+            .toLowerCase());
 
     print("Platform specific: ${platform?.name}");
 
