@@ -5,4 +5,8 @@ extension ContextExt on BuildContext {
   AppLocalizations get strings {
     return AppLocalizations.of(this)!;
   }
+
+   TextTheme get textStyle {
+    return Theme.of(this).textTheme;
+  }
 }

@@ -56,7 +56,7 @@ class VideoGameModel {
   }
 
   VideoGameModel copyWithBase64Image({
-    required String imageBase64,
+    String? imageBase64,
     required String? imageUrl,
   }) {
     return VideoGameModel(
@@ -66,7 +66,7 @@ class VideoGameModel {
       ean: ean,
       imageUrl: imageUrl ?? this.imageUrl,
       uuid: uuid,
-      imageBase64: imageBase64,
+      imageBase64: imageBase64 ?? this.imageBase64,
       gamingPlatformEnum: gamingPlatformEnum,
       numberOfCopiesOwned: numberOfCopiesOwned,
     );
@@ -80,6 +80,20 @@ class VideoGameModel {
       'ean': ean,
       'imageUrl': imageUrl,
       'imageBase64': imageBase64,
+      "gamingPlatformEnum": gamingPlatformEnum.name,
+      'uuid': uuid,
+      'numberOfCopiesOwned': numberOfCopiesOwned
+    };
+  }
+
+  Map<String, dynamic> toAppWriteJson() {
+    return {
+      'title': title,
+      'description': description,
+      'platform': platform?.name,
+      'ean': ean,
+      'imageUrl': imageUrl,
+      'imageBase64': "",
       "gamingPlatformEnum": gamingPlatformEnum.name,
       'uuid': uuid,
       'numberOfCopiesOwned': numberOfCopiesOwned
@@ -133,6 +147,20 @@ class VideoGameModel {
   VideoGameModel updatePlatform(
       GamingPlatform? platform, GamingPlatformEnum platformEnum) {
     return _copyWith(platform: platform, gamingPlatformEnum: platformEnum);
+  }
+
+  VideoGameModel resetImageUrl() {
+    return VideoGameModel(
+      title: title,
+      description: description,
+      platform: platform,
+      ean: ean,
+      imageUrl: null,
+      uuid: uuid,
+      imageBase64: null,
+      gamingPlatformEnum: gamingPlatformEnum,
+      numberOfCopiesOwned: numberOfCopiesOwned,
+    );
   }
 }
 
@@ -243,8 +271,9 @@ class GaminPlatformsBreakdown {
     }
 
     if (result == GamingPlatformEnum.unknown) {
-      result = _getPlatformEnumFromDescription(
-          item?.description?.removeNonAlphanumericButKeepSpaces().toLowerCase());
+      result = _getPlatformEnumFromDescription(item?.description
+          ?.removeNonAlphanumericButKeepSpaces()
+          .toLowerCase());
     }
 
     return result;
@@ -295,7 +324,7 @@ class GaminPlatformsBreakdown {
     for (var common in commons) {
       bool isPlatform =
           common.$2.any((String test) => title?.contains(test) ?? false) ||
-          common.$2.any((String test) => desc?.contains(test) ?? false) ;
+              common.$2.any((String test) => desc?.contains(test) ?? false);
       if (isPlatform) dd = common.$1;
     }
     return dd;

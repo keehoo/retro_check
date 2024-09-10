@@ -35,4 +35,11 @@ class LocalDatabaseService {
     await gamebox.close();
     return games;
   }
+
+  Future<void> deleteFromDb(VideoGameModel item) async {
+    final Box<VideoGameModel> gameBox =
+        await Hive.openBox<VideoGameModel>("games");
+    await gameBox.delete(item.uuid,);
+    await gameBox.close();
+  }
 }

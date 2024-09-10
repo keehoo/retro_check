@@ -160,7 +160,7 @@ class GameInputScreen extends StatelessWidget {
                       platform: state.platform ??
                           platforms.getPlatformFromTitle(state.gameTitle ?? ""),
                       ean: state.ean,
-                      imageUrl: imageUrl,
+                      imageUrl: imageUrl.hashCode.toString(),
                       imageBase64: base64String(imageBytes!),
                       gamingPlatformEnum: state.platformEnum!,
                       numberOfCopiesOwned: 1);

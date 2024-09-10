@@ -1,22 +1,26 @@
 import 'dart:io';
+import 'dart:typed_data';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
+import 'package:untitled/ImageWidget.dart';
 import 'package:untitled/appwrite/appwrite.dart';
+import 'package:untitled/ext/context_ext.dart';
 import 'package:untitled/ext/string_ext.dart';
 import 'package:untitled/generic_video_game_model.dart';
 import 'package:untitled/local_storage/local_database_service.dart';
 import 'package:untitled/local_storage/video_game.dart';
-import 'package:untitled/screens/game_details/game_details_screen.dart';
 import 'package:untitled/screens/game_input/game_input_screen.dart';
+import 'package:untitled/screens/game_input/platform_selection/platform_selection_screen.dart';
+import 'package:untitled/screens/home_screen_cubit.dart';
 import 'package:untitled/twitch/twitch_api.dart';
-import 'package:untitled/utils/colors/app_palette.dart';
 import 'package:untitled/utils/image_helpers/image_helpers.dart';
+import 'package:untitled/utils/logger/KeehooLogger.dart';
 import 'package:untitled/utils/typedefs/typedefs.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -27,7 +31,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List<VideoGameModel> games = [];
   final psn =
       """{"npsso":"8vs5a98DFKXVutXQkWMPLxGaDjKZdH7c6jwZRjYMrZVgJUFcTEvmj5jgA9Q8nmHc"}""";
 
@@ -43,192 +46,276 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration:
-          const BoxDecoration(gradient: AppPalette.lightGradientBackground),
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: const Text(
-            "App title",
-          ),
-          actions: [
-            IconButton(
-                onPressed: () => openGameEanScanner(context,
-                        onScannedGameAlreadyInCollection: (game, rawVideoGame) {
-                      showDialog(
-                          context: context,
-                          builder: (_) {
-                            return AlertDialog(
-                              content: Text(
-                                "It seems that you already have ${game.title} in your collection. Do you own more copies?",
-                                style: Theme.of(context).textTheme.labelSmall,
-                              ),
-                              actions: [
-                                ElevatedButton(
-                                    onPressed: () async {
-                                      final db = LocalDatabaseService();
-                                      await db.updateLocalDbGame(
-                                          game.withAdditionalCopy());
-                                      final videoGames =
-                                          await db.getVideoGames();
-                                      if (!context.mounted) return;
-                                      context.pop();
-                                      setState(() {
-                                        games = videoGames;
-                                      });
-                                    },
-                                    child: const Text("yes")),
-                                OutlinedButton(
-                                    onPressed: () {
-                                      context.pop();
-                                    },
-                                    child: const Text("no")),
-                              ],
-                            );
-                          });
-                    }, onCurrentGamesUpdated: (games) {
-                      setState(() {
-                        this.games = games;
-                      });
-                    }),
-                icon: const Icon(Icons.add_a_photo_outlined)),
-            IconButton(
-                onPressed: () => context.go("/${GameInputScreen.routeName}"),
-                icon: const Icon(
-                  Icons.add_circle_outline_rounded,
-                ))
-          ],
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          "App title",
         ),
-        body: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              Expanded(
-                child: FutureBuilder(
-                  future: LocalDatabaseService().getVideoGames(),
-                  builder: (BuildContext context,
-                      AsyncSnapshot<List<VideoGameModel>> snapshot) {
-                    return Container(
-                      decoration: const BoxDecoration(
-                          borderRadius: BorderRadius.all(Radius.circular(16))),
-                      child: ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: snapshot.data?.length ?? 0,
-                          itemBuilder: (context, index) {
-                            final item = snapshot.data?[index];
-                            return Padding(
+        actions: [
+          IconButton(
+              onPressed: () =>
+                  openGameEanScanner(context, onGameNotFound: (String ean) {
+                    _onGameNotFoundByEanScan(context, ean);
+                  }, onScannedGameAlreadyInCollection: (game, rawVideoGame) {
+                    _onGameAlreadyInCollection(context, game);
+                  }, onCurrentGamesUpdated: (games) {
+                    context.read<HomeScreenCubit>().getVideoGames();
+                  }),
+              icon: const Icon(Icons.add_a_photo_outlined)),
+          IconButton(
+              onPressed: () => context.go("/${GameInputScreen.routeName}"),
+              icon: const Icon(
+                Icons.add_circle_outline_rounded,
+              ))
+        ],
+      ),
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            Expanded(
+              child: BlocBuilder<HomeScreenCubit, HomeScreenState>(
+                builder: (context, state) {
+                  return RefreshIndicator.adaptive(
+                    onRefresh: () =>
+                        context.read<HomeScreenCubit>().getVideoGames(),
+                    child: ListView.builder(
+                        itemCount: state.games?.length ?? 0,
+                        itemBuilder: (context, index) {
+                          final VideoGameModel item =
+                              (state.games ?? [])[index];
+                          return Padding(
                               padding: const EdgeInsets.all(8.0),
-                              child: Card(
-                                elevation: 8,
-                                surfaceTintColor: Colors.blueGrey,
-                                child: ListTile(
-                                  onTap: () {
-                                    context
-                                        .go("/${GameDetailsScreen.routeName}", extra: item);
-                                  },
-                                  subtitle: Text(
-                                    item?.description ?? "",
-                                    maxLines: 2,
-                                  ),
-                                  trailing: item?.gamingPlatformEnum != null
-                                      ? SizedBox(
-                                          height: 75,
-                                          width: 50,
-                                          child: Image.asset(
-                                            item!.gamingPlatformEnum
-                                                .getLogoAsset(),
-                                          ),
-                                        )
-                                      : const SizedBox.shrink(),
-                                  leading: item == null
-                                      ? null
-                                      : SizedBox(
-                                          height: 75,
-                                          width: 50,
-                                          child: Stack(
-                                            children: [
-                                              Badge(
-                                                backgroundColor: Colors.green,
-                                                label: Text(
-                                                    "${item.numberOfCopiesOwned}"),
-                                              ),
-                                              _getImage(item,
-                                                  onWantsToUpdatePhoto:
-                                                      (game) async {
-                                                final XFile? image =
-                                                    await ImagePicker()
-                                                        .pickImage(
-                                                            source: ImageSource
-                                                                .camera);
-                                                final imageBytes =
-                                                    await image?.readAsBytes();
-                                                if (imageBytes == null) return;
-                                                final gameBase64String =
-                                                    base64String(imageBytes);
-                                                await LocalDatabaseService()
-                                                    .updateBase64ImageForGame(
-                                                        game, gameBase64String);
-                                                AppWriteHandler()
-                                                    .updatePictureOf(
-                                                        File(image!.path),
-                                                        gameBase64String,
-                                                        game);
-                                              }),
-                                            ],
-                                          ),
+                              child: SizedBox(
+                                height: 160,
+                                child: Card(
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        flex: 2,
+                                        child: ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          child: _getImage(item,
+                                              onWantsToUpdatePhoto:
+                                                  (game) async {
+                                            updateGameCover(context, game)
+                                                .then((_) {
+                                              if (!context.mounted) return;
+                                              context
+                                                  .read<HomeScreenCubit>()
+                                                  .getVideoGames();
+                                            });
+                                          }),
                                         ),
-                                  title: Text(item?.title ?? "no title"),
+                                      ),
+                                      const SizedBox(
+                                        width: 2,
+                                      ),
+                                      Expanded(
+                                          flex: 3,
+                                          child: Column(
+                                            children: [
+                                              Text(
+                                                item.title,
+                                                style: context
+                                                    .textStyle.titleLarge,
+                                                maxLines: 2,
+                                              ),
+                                              item.description == null
+                                                  ? const SizedBox.shrink()
+                                                  : Text(
+                                                      maxLines: 4,
+                                                      item.description!,
+                                                      style: context
+                                                          .textStyle.bodySmall,
+                                                    ),
+                                              const Spacer(),
+                                              Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                                                child: Row(
+                                                  children: [
+                                                    TextButton.icon(
+                                                      onPressed: () {
+                                                        context.read<HomeScreenCubit>().deleteFromLocalDb(item);
+                                                      },
+                                                      style: ButtonStyle(
+                                                        minimumSize:
+                                                            WidgetStateProperty
+                                                                .all(const Size(
+                                                                    40, 30)),
+                                                        elevation:
+                                                            WidgetStateProperty
+                                                                .all(4),
+                                                        shape: WidgetStateProperty
+                                                            .all<
+                                                                RoundedRectangleBorder>(
+                                                          RoundedRectangleBorder(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        15.0),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      icon: Icon(
+                                                        Icons
+                                                            .delete_forever_outlined,
+                                                        color: Colors
+                                                            .primaries.first,
+                                                      ),
+                                                      label: Text(
+                                                        "delete",
+                                                        style: context.textStyle
+                                                            .bodySmall,
+                                                      ),
+                                                    ),
+                                                    const Spacer(),
+                                                    FilledButton(
+                                                      onPressed: () {},
+                                                      style: ButtonStyle(
+                                                        minimumSize:
+                                                            WidgetStateProperty
+                                                                .all(const Size(
+                                                                    70, 30)),
+                                                        elevation:
+                                                            WidgetStateProperty
+                                                                .all(4),
+                                                        shape: WidgetStateProperty
+                                                            .all<
+                                                                RoundedRectangleBorder>(
+                                                          RoundedRectangleBorder(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        15.0),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      child: Text(
+                                                          "copies: ${item.numberOfCopiesOwned}"),
+                                                    ),
+                                                  ],
+                                                ),
+                                              )
+                                            ],
+                                          )),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            );
-                          }),
-                    );
-                  },
-                ),
+                              ));
+                        }),
+                  );
+                },
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  void _onGameAlreadyInCollection(BuildContext context, VideoGameModel game) {
+    showDialog(
+        context: context,
+        builder: (_) {
+          return AlertDialog(
+            content: Text(
+              "It seems that you already have ${game.title} in your collection. Do you own more copies?",
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            actions: [
+              ElevatedButton(
+                  onPressed: () async {
+                    final db = LocalDatabaseService();
+                    await db.updateLocalDbGame(game.withAdditionalCopy());
+                    if (!context.mounted) return;
+                    context.pop();
+                    context.read<HomeScreenCubit>().getVideoGames();
+                  },
+                  child: Text("yes", style: context.textStyle.bodySmall)),
+              OutlinedButton(
+                  onPressed: () {
+                    context.pop();
+                  },
+                  child: Text("no", style: context.textStyle.bodySmall)),
+            ],
+          );
+        });
   }
 
   Widget _getImage(VideoGameModel game,
       {Function(VideoGameModel game)? onWantsToUpdatePhoto}) {
     if (game.imageUrl.isNullOrEmpty() && game.imageBase64.isNullOrEmpty()) {
       print("no images at all");
-      return const Icon(Icons.no_photography_outlined);
+      return getNoPictureImage(game, fit: BoxFit.cover);
     }
 
     if (game.imageUrl.isNotNullNorEmpty()) {
-      return CachedNetworkImage(
-        imageUrl: game.imageUrl!,
-        height: 100,
-        width: 100,
-        errorWidget: (_, __, ___) {
-          return GestureDetector(
-            onTap: () => onWantsToUpdatePhoto?.call(game),
-            child: const Icon(
-              Icons.no_photography_outlined,
-              color: Colors.red,
-            ),
-          );
+      return InkWell(
+        child: ImageWidget(key: ValueKey(game.uuid), game: game),
+        onTap: () {
+          onWantsToUpdatePhoto?.call(game);
         },
       );
     } else if (game.imageBase64.isNotNullNorEmpty()) {
       return imageFromBase64String(game.imageBase64!);
     } else {
-      return const Icon(
-        Icons.no_photography_outlined,
-        color: Colors.red,
-      );
+      return getNoPictureImage(game, fit: BoxFit.cover);
     }
+  }
+
+  Future<void> updateGameCover(
+      BuildContext context, VideoGameModel game) async {
+    final size = MediaQuery.of(context).size;
+    final XFile? image = await ImagePicker().pickImage(
+        source: ImageSource.camera,
+        maxWidth: size.width / 2,
+        maxHeight: size.height / 2);
+    final imageBytes = await image?.readAsBytes();
+    if (imageBytes == null) return;
+    final gameBase64String = base64String(imageBytes);
+    await LocalDatabaseService()
+        .updateBase64ImageForGame(game, gameBase64String);
+    await AppWriteHandler()
+        .updatePictureOf(File(image!.path), gameBase64String, game);
+  }
+
+  void _onGameNotFoundByEanScan(BuildContext context, String ean) {
+    showDialog(
+        context: context,
+        builder: (a) {
+          return AlertDialog(
+            content: Text(
+              "Whoops! Couldn't find anything with that scan. Could you please insert the data manually",
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            actions: [
+              ElevatedButton(
+                  onPressed: () async {
+                    context.pop();
+                    context.go("/${GameInputScreen.routeName}");
+                  },
+                  child: Text(
+                    "Sure, let's do it",
+                    style: context.textStyle.bodySmall,
+                  )),
+              OutlinedButton(
+                  onPressed: () {
+                    context.pop();
+                  },
+                  child:
+                      Text("no way Jose!", style: context.textStyle.bodySmall)),
+            ],
+          );
+        });
   }
 }
 
 Future<String?> openGameEanScanner(BuildContext context,
     {VideoGamesCallback? onCurrentGamesUpdated,
+    Function(String ean)? onGameNotFound,
     VideoGameCallback? onScannedGameAlreadyInCollection}) async {
   var res = await Navigator.push(
       context,
@@ -244,7 +331,7 @@ Future<String?> openGameEanScanner(BuildContext context,
 
     if (videoGame.items?.isEmpty ?? true) {
       print("items is empty for that game");
-      return null;
+      onGameNotFound?.call(res);
     }
 
     if (!context.mounted) return null;
@@ -269,8 +356,34 @@ Future<String?> openGameEanScanner(BuildContext context,
 
     print("Platform specific: ${platform?.name}");
 
+    if (platformEnum == GamingPlatformEnum.unknown) {
+      if (!context.mounted) return null;
+      final platformSelectionResult = await context.push("/${PlatformSelectionScreen.routeName}");
+      Lgr.log((platformSelectionResult as FullPlatform?)?.specificPlatformModel.name?? "");
+    }
+
     var gameModel = VideoGameModel.fromItems(videoGame.items!.first,
         gamingPlatform: platform, platformEnum: platformEnum);
+
+    final imageUrls = videoGame.items?.first.images ?? [];
+    for (var url in imageUrls) {
+      try {
+        final result = await dio.get(url,
+            options: Options(responseType: ResponseType.bytes));
+
+        if ((result.statusCode ?? 500) < 300 &&
+            (result.statusCode ?? 0) >= 200) {
+          final Uint8List ints = Uint8List.fromList(result.data as List<int>);
+          gameModel = gameModel.copyWithBase64Image(
+              imageUrl: url, imageBase64: base64String(ints));
+          break;
+        } else {
+          gameModel = gameModel.resetImageUrl();
+        }
+      } catch (_) {
+        print("Error getting proper image data, no worries, this is normal!");
+      }
+    }
 
     final gameBox = await Hive.openBox<VideoGameModel>("games");
 
@@ -292,8 +405,10 @@ Future<String?> openGameEanScanner(BuildContext context,
     final games = gameBox.values.toList();
     await gameBox.close();
     onCurrentGamesUpdated?.call(games);
-    AppWriteHandler().saveGameInDatabase(gameModel).then((a) {
-      print("Game uploaded to API ${a}");
+    await AppWriteHandler()
+        .saveGameInDatabase(gameModel)
+        .then((Map<String, dynamic>? a) {
+      print("Game uploaded to API ${a.toString()}");
     });
     return res;
   } else {

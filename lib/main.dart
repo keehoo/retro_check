@@ -10,10 +10,12 @@ import 'package:untitled/generic_video_game_model.dart';
 import 'package:untitled/local_storage/video_game.dart';
 import 'package:untitled/screens/game_details/game_details_cubit.dart';
 import 'package:untitled/screens/game_details/game_details_screen.dart';
-import 'package:untitled/screens/games_tab_navigation_cubit.dart';
 import 'package:untitled/screens/game_input/game_input_cubit.dart';
 import 'package:untitled/screens/game_input/game_input_screen.dart';
+import 'package:untitled/screens/game_input/platform_selection/platform_selection_screen.dart';
+import 'package:untitled/screens/games_tab_navigation_cubit.dart';
 import 'package:untitled/screens/home_screen.dart';
+import 'package:untitled/screens/home_screen_cubit.dart';
 import 'package:untitled/screens/navigation_main.dart';
 import 'package:untitled/web_scrapper/web_scrapper.dart';
 
@@ -57,8 +59,7 @@ class MyApp extends StatelessWidget {
       ],
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.pink,
-        ),
+            seedColor: Colors.red, onSurface: Colors.white),
         appBarTheme: AppBarTheme(
             backgroundColor: Colors.transparent,
             titleTextStyle: Theme.of(context).textTheme.bodyMedium),
@@ -69,10 +70,9 @@ class MyApp extends StatelessWidget {
           ),
 
           /// AppBar default style
-          titleLarge: GoogleFonts.adamina(
-            fontSize: 30,
-            fontStyle: FontStyle.italic,
-          ),
+          titleLarge: GoogleFonts.raleway(
+              fontSize: 17, fontWeight: FontWeight.w900, color: Colors.black),
+          bodySmall: GoogleFonts.raleway(fontSize: 10, color: Colors.black),
           bodyMedium: GoogleFonts.merriweather().copyWith(color: Colors.white),
           displaySmall: GoogleFonts.pacifico(),
         ),
@@ -102,6 +102,13 @@ class MyApp extends StatelessWidget {
                 path: "/",
                 routes: [
                   GoRoute(
+                      path: PlatformSelectionScreen.routeName,
+                      pageBuilder:
+                          (BuildContext context, GoRouterState routerState) {
+                        return const TransitionPage(
+                            child: PlatformSelectionScreen());
+                      }),
+                  GoRoute(
                       path: GameInputScreen.routeName,
                       pageBuilder:
                           (BuildContext context, GoRouterState routerState) {
@@ -113,7 +120,13 @@ class MyApp extends StatelessWidget {
                       }),
                 ],
                 pageBuilder: (context, GoRouterState b) {
-                  return const NoTransitionPage(child: HomeScreen());
+                  return NoTransitionPage(
+                      child: BlocProvider(
+                    create: (context) => HomeScreenCubit()
+                      ..getGaminPlatforms()
+                      ..getVideoGames(),
+                    child: const HomeScreen(),
+                  ));
                 }),
             GoRoute(
               parentNavigatorKey: _shellNavigatorKey,
