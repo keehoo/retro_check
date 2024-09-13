@@ -96,17 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         child: ClipRRect(
                                           borderRadius:
                                               BorderRadius.circular(12),
-                                          child: _getImage(item,
-                                              onWantsToUpdatePhoto:
-                                                  (game) async {
-                                            updateGameCover(context, game)
-                                                .then((_) {
-                                              if (!context.mounted) return;
-                                              context
-                                                  .read<HomeScreenCubit>()
-                                                  .getVideoGames();
-                                            });
-                                          }),
+                                          child: _handleImage(item, context),
                                         ),
                                       ),
                                       const SizedBox(
@@ -133,12 +123,18 @@ class _HomeScreenState extends State<HomeScreen> {
                                               const Spacer(),
                                               Padding(
                                                 padding:
-                                                    const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 2,
+                                                        vertical: 2),
                                                 child: Row(
                                                   children: [
                                                     TextButton.icon(
                                                       onPressed: () {
-                                                        context.read<HomeScreenCubit>().deleteFromLocalDb(item);
+                                                        context
+                                                            .read<
+                                                                HomeScreenCubit>()
+                                                            .deleteFromLocalDb(
+                                                                item);
                                                       },
                                                       style: ButtonStyle(
                                                         minimumSize:
@@ -216,6 +212,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _handleImage(VideoGameModel item, BuildContext context) {
+    return _getImage(item, onWantsToUpdatePhoto: (game, _) async {
+      Lgr.log("Wants to update cover photo ${game.title}");
+      updateGameCover(context, game).then((_) {
+        if (!context.mounted) return;
+        context.read<HomeScreenCubit>().getVideoGames();
+      });
+    });
+  }
+
   void _onGameAlreadyInCollection(BuildContext context, VideoGameModel game) {
     showDialog(
         context: context,
@@ -246,23 +252,26 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _getImage(VideoGameModel game,
-      {Function(VideoGameModel game)? onWantsToUpdatePhoto}) {
+      {VideoGameCallback? onWantsToUpdatePhoto}) {
     if (game.imageUrl.isNullOrEmpty() && game.imageBase64.isNullOrEmpty()) {
       print("no images at all");
-      return getNoPictureImage(game, fit: BoxFit.cover);
+      return getNoPictureImage(game,
+          onTapped: (game, _) => onWantsToUpdatePhoto?.call(game, null));
     }
 
     if (game.imageUrl.isNotNullNorEmpty()) {
       return InkWell(
         child: ImageWidget(key: ValueKey(game.uuid), game: game),
         onTap: () {
-          onWantsToUpdatePhoto?.call(game);
+          Lgr.log("Tapped on photo in list ${game.title}");
+          onWantsToUpdatePhoto?.call(game, null);
         },
       );
     } else if (game.imageBase64.isNotNullNorEmpty()) {
       return imageFromBase64String(game.imageBase64!);
     } else {
-      return getNoPictureImage(game, fit: BoxFit.cover);
+      return getNoPictureImage(game,
+          onTapped: (game, _) => onWantsToUpdatePhoto?.call(game, null));
     }
   }
 
@@ -271,8 +280,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final size = MediaQuery.of(context).size;
     final XFile? image = await ImagePicker().pickImage(
         source: ImageSource.camera,
-        maxWidth: size.width / 2,
-        maxHeight: size.height / 2);
+        maxWidth: size.width,
+        maxHeight: size.height);
     final imageBytes = await image?.readAsBytes();
     if (imageBytes == null) return;
     final gameBase64String = base64String(imageBytes);
@@ -358,8 +367,12 @@ Future<String?> openGameEanScanner(BuildContext context,
 
     if (platformEnum == GamingPlatformEnum.unknown) {
       if (!context.mounted) return null;
-      final platformSelectionResult = await context.push("/${PlatformSelectionScreen.routeName}");
-      Lgr.log((platformSelectionResult as FullPlatform?)?.specificPlatformModel.name?? "");
+      final platformSelectionResult =
+          await context.push("/${PlatformSelectionScreen.routeName}");
+      Lgr.log((platformSelectionResult as FullPlatform?)
+              ?.specificPlatformModel
+              .name ??
+          "");
     }
 
     var gameModel = VideoGameModel.fromItems(videoGame.items!.first,
