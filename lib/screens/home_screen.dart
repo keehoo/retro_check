@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -34,7 +36,6 @@ class _HomeScreenState extends State<HomeScreen> {
   final psn =
       """{"npsso":"8vs5a98DFKXVutXQkWMPLxGaDjKZdH7c6jwZRjYMrZVgJUFcTEvmj5jgA9Q8nmHc"}""";
 
-  int currentIndex = 0;
 
   @override
   void initState() {
@@ -46,167 +47,188 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          "App title",
+    return OverlayPortal(
+      controller: context.read<HomeScreenCubit>().overlayPortalController,
+      overlayChildBuilder: (BuildContext context) {
+        final size = MediaQuery.of(context).size;
+        return BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
+            child: Container(
+              color: Colors.black54,
+              height: size.height,
+              width: size.width,
+              child: const Center(
+                child: CupertinoActivityIndicator(),
+              ),
+            ));
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            "App title",
+          ),
+          actions: [
+            IconButton(
+                onPressed: () =>
+                    openGameEanScanner(context, onGameNotFound: (String ean) {
+                      _onGameNotFoundByEanScan(context, ean);
+                    }, onScannedGameAlreadyInCollection: (game, rawVideoGame) {
+                      _onGameAlreadyInCollection(context, game);
+                    }, onCurrentGamesUpdated: (games) {
+                      context.read<HomeScreenCubit>().getVideoGames();
+                    }),
+                icon: const Icon(Icons.add_a_photo_outlined)),
+            IconButton(
+                onPressed: () => context.go("/${GameInputScreen.routeName}"),
+                icon: const Icon(
+                  Icons.add_circle_outline_rounded,
+                ))
+          ],
         ),
-        actions: [
-          IconButton(
-              onPressed: () =>
-                  openGameEanScanner(context, onGameNotFound: (String ean) {
-                    _onGameNotFoundByEanScan(context, ean);
-                  }, onScannedGameAlreadyInCollection: (game, rawVideoGame) {
-                    _onGameAlreadyInCollection(context, game);
-                  }, onCurrentGamesUpdated: (games) {
-                    context.read<HomeScreenCubit>().getVideoGames();
-                  }),
-              icon: const Icon(Icons.add_a_photo_outlined)),
-          IconButton(
-              onPressed: () => context.go("/${GameInputScreen.routeName}"),
-              icon: const Icon(
-                Icons.add_circle_outline_rounded,
-              ))
-        ],
-      ),
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            Expanded(
-              child: BlocBuilder<HomeScreenCubit, HomeScreenState>(
-                builder: (context, state) {
-                  return RefreshIndicator.adaptive(
-                    onRefresh: () =>
-                        context.read<HomeScreenCubit>().getVideoGames(),
-                    child: ListView.builder(
-                        itemCount: state.games?.length ?? 0,
-                        itemBuilder: (context, index) {
-                          final VideoGameModel item =
-                              (state.games ?? [])[index];
-                          return Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: SizedBox(
-                                height: 160,
-                                child: Card(
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        flex: 2,
-                                        child: ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                          child: _handleImage(item, context),
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              Expanded(
+                child: BlocBuilder<HomeScreenCubit, HomeScreenState>(
+                  builder: (context, state) {
+                    return RefreshIndicator.adaptive(
+                      onRefresh: () =>
+                          context.read<HomeScreenCubit>().getVideoGames(),
+                      child: ListView.builder(
+                          itemCount: state.games?.length ?? 0,
+                          itemBuilder: (context, index) {
+                            final VideoGameModel item =
+                                (state.games ?? [])[index];
+                            return Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: SizedBox(
+                                  height: 160,
+                                  child: Card(
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          flex: 2,
+                                          child: ClipRRect(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            child: _handleImage(item, context),
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(
-                                        width: 2,
-                                      ),
-                                      Expanded(
-                                          flex: 3,
-                                          child: Column(
-                                            children: [
-                                              Text(
-                                                item.title,
-                                                style: context
-                                                    .textStyle.titleLarge,
-                                                maxLines: 2,
-                                              ),
-                                              item.description == null
-                                                  ? const SizedBox.shrink()
-                                                  : Text(
-                                                      maxLines: 4,
-                                                      item.description!,
-                                                      style: context
-                                                          .textStyle.bodySmall,
-                                                    ),
-                                              const Spacer(),
-                                              Padding(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 2,
-                                                        vertical: 2),
-                                                child: Row(
-                                                  children: [
-                                                    TextButton.icon(
-                                                      onPressed: () {
-                                                        context
-                                                            .read<
-                                                                HomeScreenCubit>()
-                                                            .deleteFromLocalDb(
-                                                                item);
-                                                      },
-                                                      style: ButtonStyle(
-                                                        minimumSize:
-                                                            WidgetStateProperty
-                                                                .all(const Size(
-                                                                    40, 30)),
-                                                        elevation:
-                                                            WidgetStateProperty
-                                                                .all(4),
-                                                        shape: WidgetStateProperty
-                                                            .all<
-                                                                RoundedRectangleBorder>(
-                                                          RoundedRectangleBorder(
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        15.0),
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      icon: Icon(
-                                                        Icons
-                                                            .delete_forever_outlined,
-                                                        color: Colors
-                                                            .primaries.first,
-                                                      ),
-                                                      label: Text(
-                                                        "delete",
+                                        const SizedBox(
+                                          width: 2,
+                                        ),
+                                        Expanded(
+                                            flex: 3,
+                                            child: Column(
+                                              children: [
+                                                Text(
+                                                  item.title,
+                                                  style: context
+                                                      .textStyle.titleLarge,
+                                                  maxLines: 2,
+                                                ),
+                                                item.description == null
+                                                    ? const SizedBox.shrink()
+                                                    : Text(
+                                                        maxLines: 4,
+                                                        item.description!,
                                                         style: context.textStyle
                                                             .bodySmall,
                                                       ),
-                                                    ),
-                                                    const Spacer(),
-                                                    FilledButton(
-                                                      onPressed: () {},
-                                                      style: ButtonStyle(
-                                                        minimumSize:
-                                                            WidgetStateProperty
-                                                                .all(const Size(
-                                                                    70, 30)),
-                                                        elevation:
-                                                            WidgetStateProperty
-                                                                .all(4),
-                                                        shape: WidgetStateProperty
-                                                            .all<
-                                                                RoundedRectangleBorder>(
-                                                          RoundedRectangleBorder(
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        15.0),
+                                                const Spacer(),
+                                                Padding(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 2,
+                                                      vertical: 2),
+                                                  child: Row(
+                                                    children: [
+                                                      TextButton.icon(
+                                                        onPressed: () {
+                                                          context
+                                                              .read<
+                                                                  HomeScreenCubit>()
+                                                              .deleteFromLocalDb(
+                                                                  item);
+                                                        },
+                                                        style: ButtonStyle(
+                                                          minimumSize:
+                                                              WidgetStateProperty
+                                                                  .all(
+                                                                      const Size(
+                                                                          40,
+                                                                          30)),
+                                                          elevation:
+                                                              WidgetStateProperty
+                                                                  .all(4),
+                                                          shape: WidgetStateProperty
+                                                              .all<
+                                                                  RoundedRectangleBorder>(
+                                                            RoundedRectangleBorder(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          15.0),
+                                                            ),
                                                           ),
                                                         ),
+                                                        icon: Icon(
+                                                          Icons
+                                                              .delete_forever_outlined,
+                                                          color: Colors
+                                                              .primaries.first,
+                                                        ),
+                                                        label: Text(
+                                                          "delete",
+                                                          style: context
+                                                              .textStyle
+                                                              .bodySmall,
+                                                        ),
                                                       ),
-                                                      child: Text(
-                                                          "copies: ${item.numberOfCopiesOwned}"),
-                                                    ),
-                                                  ],
-                                                ),
-                                              )
-                                            ],
-                                          )),
-                                    ],
+                                                      const Spacer(),
+                                                      FilledButton(
+                                                        onPressed: () {},
+                                                        style: ButtonStyle(
+                                                          minimumSize:
+                                                              WidgetStateProperty
+                                                                  .all(
+                                                                      const Size(
+                                                                          70,
+                                                                          30)),
+                                                          elevation:
+                                                              WidgetStateProperty
+                                                                  .all(4),
+                                                          shape: WidgetStateProperty
+                                                              .all<
+                                                                  RoundedRectangleBorder>(
+                                                            RoundedRectangleBorder(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          15.0),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        child: Text(
+                                                            "copies: ${item.numberOfCopiesOwned}"),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                )
+                                              ],
+                                            )),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ));
-                        }),
-                  );
-                },
+                                ));
+                          }),
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -282,6 +304,8 @@ class _HomeScreenState extends State<HomeScreen> {
         source: ImageSource.camera,
         maxWidth: size.width,
         maxHeight: size.height);
+    if (!context.mounted) return;
+    context.read<HomeScreenCubit>().overlayPortalController.show();
     final imageBytes = await image?.readAsBytes();
     if (imageBytes == null) return;
     final gameBase64String = base64String(imageBytes);
@@ -289,6 +313,8 @@ class _HomeScreenState extends State<HomeScreen> {
         .updateBase64ImageForGame(game, gameBase64String);
     await AppWriteHandler()
         .updatePictureOf(File(image!.path), gameBase64String, game);
+    if (!context.mounted) return;
+    context.read<HomeScreenCubit>().overlayPortalController.hide();
   }
 
   void _onGameNotFoundByEanScan(BuildContext context, String ean) {

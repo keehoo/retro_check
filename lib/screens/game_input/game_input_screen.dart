@@ -78,6 +78,7 @@ class GameInputScreen extends StatelessWidget {
                 child: IconButton(
                     onPressed: () async {
                       String? ean = await openGameEanScanner(context);
+                      if (!context.mounted) return;
                       context.read<GameInputCubit>().onEanUpdated(ean);
                     },
                     icon: Image.asset("assets/icons/barcode.webp")),
