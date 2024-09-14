@@ -17,14 +17,14 @@ class LocalDatabaseService {
         game.copyWithBase64Image(imageBase64: gameBase64String, imageUrl: null);
     final Box<VideoGameModel> gameBox =
         await Hive.openBox<VideoGameModel>("games");
-    await gameBox.put(updatedGame.uuid, updatedGame);
+    await gameBox.put(updatedGame.ean, updatedGame);
     await gameBox.close();
   }
 
   Future<void> updateLocalDbGame(VideoGameModel game) async {
     final Box<VideoGameModel> gameBox =
         await Hive.openBox<VideoGameModel>("games");
-    await gameBox.put(game.uuid, game);
+    await gameBox.put(game.ean, game);
     await gameBox.close();
   }
 
@@ -39,7 +39,16 @@ class LocalDatabaseService {
   Future<void> deleteFromDb(VideoGameModel item) async {
     final Box<VideoGameModel> gameBox =
         await Hive.openBox<VideoGameModel>("games");
-    await gameBox.delete(item.uuid,);
+    await gameBox.delete(item.ean,);
     await gameBox.close();
+  }
+
+
+  Future<Map<String, dynamic>> saveInLocalDb(VideoGameModel videoGame) async{
+    final Box<VideoGameModel> gameBox =
+    await Hive.openBox<VideoGameModel>("games");
+    await gameBox.put(videoGame.ean, videoGame);
+    await gameBox.close();
+    return videoGame.toJson();
   }
 }

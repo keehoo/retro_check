@@ -36,7 +36,6 @@ class _HomeScreenState extends State<HomeScreen> {
   final psn =
       """{"npsso":"8vs5a98DFKXVutXQkWMPLxGaDjKZdH7c6jwZRjYMrZVgJUFcTEvmj5jgA9Q8nmHc"}""";
 
-
   @override
   void initState() {
     super.initState();
@@ -79,7 +78,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     }),
                 icon: const Icon(Icons.add_a_photo_outlined)),
             IconButton(
-                onPressed: () => context.go("/${GameInputScreen.routeName}"),
+                onPressed: () async {
+                  final game =
+                      await context.push("/${GameInputScreen.routeName}");
+                  Lgr.log("Finished creating a game manually");
+                  if (game is VideoGameModel) {
+                    Lgr.log("Got video game ${game.title}");
+                    context.read<HomeScreenCubit>().getVideoGames();
+                  } else {
+                    Lgr.errorLog("Didn't get a video game ${game.runtimeType}");
+                  }
+
+                },
                 icon: const Icon(
                   Icons.add_circle_outline_rounded,
                 ))
@@ -283,7 +293,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (game.imageUrl.isNotNullNorEmpty()) {
       return InkWell(
-        child: ImageWidget(key: ValueKey(game.uuid), game: game),
+        child: ImageWidget(key: ValueKey(game.ean), game: game),
         onTap: () {
           Lgr.log("Tapped on photo in list ${game.title}");
           onWantsToUpdatePhoto?.call(game, null);
@@ -440,7 +450,7 @@ Future<String?> openGameEanScanner(BuildContext context,
     final rawGameBox = await Hive.openBox<VideoGame>("raw_data");
     await rawGameBox.put(videoGame.items!.first.ean, videoGame);
     await rawGameBox.close();
-    await gameBox.put(gameModel.uuid, gameModel);
+    await gameBox.put(gameModel.ean, gameModel);
     final games = gameBox.values.toList();
     await gameBox.close();
     onCurrentGamesUpdated?.call(games);

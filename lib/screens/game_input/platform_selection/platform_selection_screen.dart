@@ -32,24 +32,7 @@ class PlatformSelectionScreen extends StatelessWidget {
                             final plats =
                                 data.data?.getByPlatform(platform) ?? [];
                             return Card(
-                              child: ListView(
-                                children: plats
-                                    .map((item) => GestureDetector(
-                                          onTap: () {
-                                            context.pop(FullPlatform(
-                                                platformEnum: platform,
-                                                specificPlatformModel: item));
-                                          },
-                                          child: ListTile(
-                                            title: Text(
-                                              item.name,
-                                              style:
-                                                  context.textStyle.titleLarge,
-                                            ),
-                                          ),
-                                        ))
-                                    .toList(),
-                              ),
+                              child: buildListView(plats, context, platform),
                             );
                           });
                       if (!context.mounted) return;
@@ -81,4 +64,29 @@ class FullPlatform extends Equatable {
   @override
   List<Object?> get props =>
       [platformEnum, specificPlatformModel, model, color];
+}
+
+ListView buildListView(List<GamingPlatform> plats, BuildContext context,
+    GamingPlatformEnum platform, {Function(FullPlatform)? onPlatformSelected}) {
+  return ListView(
+    children: plats
+        .map((item) => GestureDetector(
+              onTap: () {
+                final fullPlatform = FullPlatform(
+                    platformEnum: platform, specificPlatformModel: item);
+                if (onPlatformSelected == null) {
+                  context.pop(fullPlatform);
+                } else {
+                  onPlatformSelected.call(fullPlatform);
+                }
+              },
+              child: ListTile(
+                title: Text(
+                  item.name,
+                  style: context.textStyle.titleLarge,
+                ),
+              ),
+            ))
+        .toList(),
+  );
 }

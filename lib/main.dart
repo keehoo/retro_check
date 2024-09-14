@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:untitled/appwrite/appwrite.dart';
+import 'package:untitled/ext/context_ext.dart';
 import 'package:untitled/generic_video_game_model.dart';
 import 'package:untitled/local_storage/video_game.dart';
 import 'package:untitled/screens/game_details/game_details_cubit.dart';
@@ -17,7 +18,6 @@ import 'package:untitled/screens/games_tab_navigation_cubit.dart';
 import 'package:untitled/screens/home_screen.dart';
 import 'package:untitled/screens/home_screen_cubit.dart';
 import 'package:untitled/screens/navigation_main.dart';
-import 'package:untitled/web_scrapper/web_scrapper.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,8 +29,8 @@ Future<void> main() async {
   Hive.registerAdapter(VideoGameModelAdapter());
   Hive.registerAdapter(GamingPlatformAdapter());
   Hive.registerAdapter(GamingPlatformEnumAdapter());
-  final d = await WebScrapper().searchByQuery(
-      s: "Double Pack Assassins Creed Brotherhood (uk Import) Dvd");
+  // final d = await WebScrapper().searchByQuery(
+  //     s: "Double Pack Assassins Creed Brotherhood (uk Import) Dvd");
 
   runApp(MyApp());
   AppWriteHandler().init();
@@ -62,6 +62,10 @@ class MyApp extends StatelessWidget {
             seedColor: Colors.red, onSurface: Colors.white),
         appBarTheme: AppBarTheme(
             backgroundColor: Colors.transparent,
+            foregroundColor: Colors.black,
+            centerTitle: false,
+            toolbarTextStyle: context.textStyle.titleLarge
+                ?.copyWith(fontWeight: FontWeight.w900),
             titleTextStyle: Theme.of(context).textTheme.bodyMedium),
         textTheme: TextTheme(
           displayLarge: const TextStyle(
@@ -73,8 +77,8 @@ class MyApp extends StatelessWidget {
           titleLarge: GoogleFonts.raleway(
               fontSize: 17, fontWeight: FontWeight.w900, color: Colors.black),
           bodySmall: GoogleFonts.raleway(fontSize: 10, color: Colors.black),
-          bodyMedium: GoogleFonts.merriweather().copyWith(color: Colors.white),
-          displaySmall: GoogleFonts.pacifico(),
+          bodyMedium: GoogleFonts.raleway(fontSize: 14, color: Colors.black),
+          displaySmall: GoogleFonts.raleway(fontSize: 12, color: Colors.black),
         ),
       ),
     );
@@ -114,7 +118,9 @@ class MyApp extends StatelessWidget {
                           (BuildContext context, GoRouterState routerState) {
                         return TransitionPage(
                             child: BlocProvider(
-                          create: (context) => GameInputCubit()..getPlatforms(),
+                          create: (context) => GameInputCubit()
+                            ..getPlatforms()
+                            ..addPageListener(),
                           child: const GameInputScreen(),
                         ));
                       }),
