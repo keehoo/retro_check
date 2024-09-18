@@ -31,48 +31,7 @@ class GameInputScreen extends StatelessWidget {
         _getPlatformSelectorPage(context)
       ];
 
-  PlatformSelectorPage _getPlatformSelectorPage(BuildContext context) =>
-      PlatformSelectorPage(
-        platformsBreakdown: context
-            .read<GameInputCubit>()
-            .state
-            .allPlatforms!, // TODO: fix that dangerous !
-        onPlatformSelected: (FullPlatform platform) {
-          context.read<GameInputCubit>()
-            ..onPlatformSelected(platform)
-            ..onGoToNextPage();
-        },
-      );
 
-  EanScannerWidget _getEanScannerForGame(BuildContext context) =>
-      EanScannerWidget(onEanScanned: (ean) {
-        Lgr.log("We got the ean numebr $ean");
-        context.read<GameInputCubit>()
-          ..onEanUpdated(ean)
-          ..onGoToNextPage();
-      });
-
-  PictureAddGame _getPictureAddForGame(BuildContext context) {
-    return PictureAddGame(
-      onPhotoUpdated: (File file) {
-        context.read<GameInputCubit>()
-          ..onImageFileSelected(file)
-          ..onGoToNextPage();
-      },
-    );
-  }
-
-  GameTitleInputWidget _getGameTitleWidget(BuildContext context,
-      {String? initialText}) {
-    return GameTitleInputWidget(
-      onTitleFinishedEditing: (String gameTitle) {
-        context.read<GameInputCubit>()
-          ..onGameTitleChanges(gameTitle)
-          ..onGoToNextPage();
-      },
-      textEditingController: TextEditingController(text: initialText),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -127,37 +86,71 @@ class GameInputScreen extends StatelessWidget {
                     },
                   ),
                 ),
-                SizedBox(
-                  height: scSize.height * 0.15,
-                  child: BlocBuilder<GameInputCubit, GameInputState>(
-                    builder: (context, state) {
-                      return PhysicalModel(
-                        elevation: 8,
-                        color: Colors.black12,
-                        child: SizedBox(
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Container(
+                    decoration: const BoxDecoration(
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.black12,
+                              blurRadius: 4,
+                              offset: Offset(4, 2)),
+                        ]),
+                    height: scSize.height * 0.1,
+                    child: BlocBuilder<GameInputCubit, GameInputState>(
+                      builder: (context, state) {
+                        return SizedBox(
                           width: scSize.width,
-                          child: Column(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              state.gameTitle != null
-                                  ? Expanded(
-                                      child: Text(
-                                      state.gameTitle!,
-                                      style: context.textStyle.bodySmall,
-                                    ))
-                                  : const SizedBox.shrink(),
-                              state.ean != null
-                                  ? Expanded(
-                                      child: Text(state.ean!,
-                                          style: context.textStyle.bodySmall))
-                                  : const SizedBox.shrink(),
                               state.image != null
-                                  ? Expanded(child: Image.file(state.image!))
+                                  ? CircleAvatar(
+                                      foregroundImage:
+                                          FileImage(state.image!, scale: 1),
+                                    )
+                                  : const SizedBox.shrink(),
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    state.gameTitle != null
+                                        ? Expanded(
+                                            child: Text(
+                                            state.gameTitle!,
+                                            style: context.textStyle.bodyLarge
+                                                ?.copyWith(
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                          ))
+                                        : const SizedBox.shrink(),
+                                    state.ean != null
+                                        ? Expanded(
+                                            child: Text(state.ean!,
+                                                style: context
+                                                    .textStyle.bodySmall))
+                                        : const SizedBox.shrink(),
+                                  ],
+                                ),
+                              ),
+                              const Spacer(),
+                              state.platformEnum != null
+                                  ? Image.asset(
+                                      state.platformEnum!.getLogoAsset())
+                                  : const SizedBox.shrink(),
+                              state.platform != null
+                                  ? Text(state.platform!.name,
+                                      style: context.textStyle.bodyMedium)
                                   : const SizedBox.shrink(),
                             ],
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
                 ),
               ],
@@ -172,6 +165,49 @@ class GameInputScreen extends StatelessWidget {
     final gameBox = await Hive.openBox<VideoGameModel>("games");
     await gameBox.add(game);
     await gameBox.close();
+  }
+
+  PlatformSelectorPage _getPlatformSelectorPage(BuildContext context) =>
+      PlatformSelectorPage(
+        platformsBreakdown: context
+            .read<GameInputCubit>()
+            .state
+            .allPlatforms!, // TODO: fix that dangerous !
+        onPlatformSelected: (FullPlatform platform) {
+          context.read<GameInputCubit>()
+            ..onPlatformSelected(platform)
+            ..onGoToNextPage();
+        },
+      );
+
+  EanScannerWidget _getEanScannerForGame(BuildContext context) =>
+      EanScannerWidget(onEanScanned: (ean) {
+        Lgr.log("We got the ean numebr $ean");
+        context.read<GameInputCubit>()
+          ..onEanUpdated(ean)
+          ..onGoToNextPage();
+      });
+
+  PictureAddGame _getPictureAddForGame(BuildContext context) {
+    return PictureAddGame(
+      onPhotoUpdated: (File file) {
+        context.read<GameInputCubit>()
+          ..onImageFileSelected(file)
+          ..onGoToNextPage();
+      },
+    );
+  }
+
+  GameTitleInputWidget _getGameTitleWidget(BuildContext context,
+      {String? initialText}) {
+    return GameTitleInputWidget(
+      onTitleFinishedEditing: (String gameTitle) {
+        context.read<GameInputCubit>()
+          ..onGameTitleChanges(gameTitle)
+          ..onGoToNextPage();
+      },
+      textEditingController: TextEditingController(text: initialText),
+    );
   }
 }
 

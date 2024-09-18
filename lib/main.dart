@@ -1,3 +1,5 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -7,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:untitled/appwrite/appwrite.dart';
 import 'package:untitled/ext/context_ext.dart';
+import 'package:untitled/firebase_options.dart';
 import 'package:untitled/generic_video_game_model.dart';
 import 'package:untitled/local_storage/video_game.dart';
 import 'package:untitled/screens/game_details/game_details_cubit.dart';
@@ -17,7 +20,10 @@ import 'package:untitled/screens/game_input/platform_selection/platform_selectio
 import 'package:untitled/screens/games_tab_navigation_cubit.dart';
 import 'package:untitled/screens/home_screen.dart';
 import 'package:untitled/screens/home_screen_cubit.dart';
+import 'package:untitled/screens/login/login_screen.dart';
 import 'package:untitled/screens/navigation_main.dart';
+import 'package:untitled/screens/user_profile/user_profile_screen.dart';
+import 'package:untitled/utils/logger/KeehooLogger.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,6 +37,10 @@ Future<void> main() async {
   Hive.registerAdapter(GamingPlatformEnumAdapter());
   // final d = await WebScrapper().searchByQuery(
   //     s: "Double Pack Assassins Creed Brotherhood (uk Import) Dvd");
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   runApp(MyApp());
   AppWriteHandler().init();
@@ -58,8 +68,13 @@ class MyApp extends StatelessWidget {
         Locale('en'), // English
       ],
       theme: ThemeData(
+        useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.red, onSurface: Colors.white),
+          brightness: Brightness.light,
+          primary: Colors.black,
+          seedColor: Colors.black,
+          // onSurface: Colors.white
+        ),
         appBarTheme: AppBarTheme(
             backgroundColor: Colors.transparent,
             foregroundColor: Colors.black,
@@ -68,12 +83,9 @@ class MyApp extends StatelessWidget {
                 ?.copyWith(fontWeight: FontWeight.w900),
             titleTextStyle: Theme.of(context).textTheme.bodyMedium),
         textTheme: TextTheme(
-          displayLarge: const TextStyle(
-            fontSize: 72,
-            fontWeight: FontWeight.bold,
-          ),
-
-          /// AppBar default style
+          labelLarge: GoogleFonts.raleway(fontSize: 24, color: Colors.black, fontWeight: FontWeight.w700),
+          labelSmall: GoogleFonts.raleway(
+              fontSize: 8, color: Colors.black, fontWeight: FontWeight.w400),
           titleLarge: GoogleFonts.raleway(
               fontSize: 17, fontWeight: FontWeight.w900, color: Colors.black),
           bodySmall: GoogleFonts.raleway(fontSize: 10, color: Colors.black),
@@ -90,6 +102,16 @@ class MyApp extends StatelessWidget {
     navigatorKey: _rootNavigatorKey,
     routes: [
       ShellRoute(
+          redirect: (BuildContext context, GoRouterState state) {
+            final isAuthenticated = FirebaseAuth.instance.currentUser != null;
+
+            Lgr.log("User authenticated? $isAuthenticated");
+            if (!isAuthenticated) {
+              return '/login';
+            } else {
+              return null; // return "null" to display the intended route without redirecting
+            }
+          },
           navigatorKey: _shellNavigatorKey,
           pageBuilder: (BuildContext context, GoRouterState state, Widget c) {
             return NoTransitionPage(
@@ -150,6 +172,11 @@ class MyApp extends StatelessWidget {
                 color: Colors.yellow,
               )),
             ),
+            GoRoute(
+              path: "/user_profile",
+              pageBuilder: (context, GoRouterState b) =>
+                  const NoTransitionPage(child: UserProfileScreen()),
+            ),
           ]),
       GoRoute(
           path: "/${GameDetailsScreen.routeName}",
@@ -160,6 +187,12 @@ class MyApp extends StatelessWidget {
               create: (context) => GameDetailsCubit(videoGame),
               child: const GameDetailsScreen(),
             ));
+          }),
+      GoRoute(
+          path: "/login",
+          pageBuilder: (context, routerState) {
+            return  NoTransitionPage(
+                child: LoginScreen());
           }),
     ],
   );

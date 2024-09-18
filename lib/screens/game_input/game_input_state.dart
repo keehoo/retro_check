@@ -59,7 +59,9 @@ class GameInputState extends Equatable {
           imageBase64: base64String(imnageBytes));
       try {
         await Future.wait([
-          AppWriteHandler().saveGameInDatabase(videoGame),
+          AppWriteHandler().saveGameInDatabase(videoGame).then((_) {
+            FirestoreHandler().userAddedAGameOrImage();
+          }),
           LocalDatabaseService().saveInLocalDb(videoGame)
         ], cleanUp: (Map<String, dynamic>? a) {
           Lgr.log(

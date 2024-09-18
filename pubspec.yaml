@@ -34,6 +34,9 @@ dependencies:
     sdk: flutter
   intl: ^0.19.0
 
+
+  claude_dart_flutter: ^1.0.0+1
+  flutter_social_button: ^1.1.4+1
   dotted_border: any
   simple_barcode_scanner: ^0.1.1
   dio: ^5.5.0+1
@@ -50,8 +53,20 @@ dependencies:
   go_router: ^14.2.3
   path_provider: ^2.1.4
   cached_network_image: ^3.4.1
-  uuid: ^4.4.2
+  uuid: ^4.5.0
   logger: ^2.4.0
+  firebase_core: ^3.4.1
+  firebase_auth: any
+#    git:
+#      url: https://github.com/firebase/flutterfire.git
+#      path: packages/firebase_auth/firebase_auth
+#      ref: auth-12931
+
+  crypto: ^3.0.5
+  flutter_facebook_auth: ^7.1.1
+  google_sign_in: ^6.2.1
+  sign_in_with_apple: ^4.1.0
+  cloud_firestore: ^5.4.1
 
 dev_dependencies:
   flutter_test:

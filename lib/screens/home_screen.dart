@@ -14,6 +14,7 @@ import 'package:untitled/ImageWidget.dart';
 import 'package:untitled/appwrite/appwrite.dart';
 import 'package:untitled/ext/context_ext.dart';
 import 'package:untitled/ext/string_ext.dart';
+import 'package:untitled/firebase/firestor_handler.dart';
 import 'package:untitled/generic_video_game_model.dart';
 import 'package:untitled/local_storage/local_database_service.dart';
 import 'package:untitled/local_storage/video_game.dart';
@@ -63,36 +64,66 @@ class _HomeScreenState extends State<HomeScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text(
-            "App title",
+          toolbarHeight: 70,
+          title: Text(
+            "Games list",
+            style: context.textStyle.titleLarge,
           ),
           actions: [
-            IconButton(
-                onPressed: () =>
-                    openGameEanScanner(context, onGameNotFound: (String ean) {
-                      _onGameNotFoundByEanScan(context, ean);
-                    }, onScannedGameAlreadyInCollection: (game, rawVideoGame) {
-                      _onGameAlreadyInCollection(context, game);
-                    }, onCurrentGamesUpdated: (games) {
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: Column(
+                children: [
+                  IconButton(
+                      onPressed: () => openGameEanScanner(context,
+                              onGameNotFound: (String ean) {
+                            _onGameNotFoundByEanScan(context, ean);
+                          }, onScannedGameAlreadyInCollection:
+                                  (game, rawVideoGame) {
+                            _onGameAlreadyInCollection(context, game);
+                          }, onCurrentGamesUpdated: (games) {
+                            context.read<HomeScreenCubit>().getVideoGames();
+                          }),
+                      icon: const Icon(
+                        Icons.barcode_reader,
+                        size: 32,
+                      )),
+                  Text(
+                    "scan barcode",
+                    style: context.textStyle.labelSmall,
+                  ),
+                  const Spacer(),
+                ],
+              ),
+            ),
+            Column(
+              children: [
+                IconButton(
+                  onPressed: () async {
+                    final game =
+                        await context.push("/${GameInputScreen.routeName}");
+                    Lgr.log("Finished creating a game manually");
+                    if (game is VideoGameModel) {
+                      Lgr.log("Got video game ${game.title}");
+                      if (!context.mounted) return;
                       context.read<HomeScreenCubit>().getVideoGames();
-                    }),
-                icon: const Icon(Icons.add_a_photo_outlined)),
-            IconButton(
-                onPressed: () async {
-                  final game =
-                      await context.push("/${GameInputScreen.routeName}");
-                  Lgr.log("Finished creating a game manually");
-                  if (game is VideoGameModel) {
-                    Lgr.log("Got video game ${game.title}");
-                    context.read<HomeScreenCubit>().getVideoGames();
-                  } else {
-                    Lgr.errorLog("Didn't get a video game ${game.runtimeType}");
-                  }
-
-                },
-                icon: const Icon(
-                  Icons.add_circle_outline_rounded,
-                ))
+                    } else {
+                      Lgr.errorLog(
+                          "Didn't get a video game ${game.runtimeType}");
+                    }
+                  },
+                  icon: const Icon(
+                    Icons.add_circle_outline_rounded,
+                    size: 32,
+                  ),
+                ),
+                Text(
+                  "add game",
+                  style: context.textStyle.labelSmall,
+                ),
+                const Spacer(),
+              ],
+            )
           ],
         ),
         body: SafeArea(
@@ -103,8 +134,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: BlocBuilder<HomeScreenCubit, HomeScreenState>(
                   builder: (context, state) {
                     return RefreshIndicator.adaptive(
-                      onRefresh: () =>
-                          context.read<HomeScreenCubit>().getVideoGames(),
+                      onRefresh: () => context
+                          .read<HomeScreenCubit>()
+                          .getVideoGames(noLoader: true),
                       child: ListView.builder(
                           itemCount: state.games?.length ?? 0,
                           itemBuilder: (context, index) {
@@ -221,7 +253,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                                           ),
                                                         ),
                                                         child: Text(
-                                                            "copies: ${item.numberOfCopiesOwned}"),
+                                                          "copies: ${item.numberOfCopiesOwned}",
+                                                          style: context
+                                                              .textStyle
+                                                              .bodyMedium
+                                                              ?.copyWith(
+                                                                  color: Colors
+                                                                      .white),
+                                                        ),
                                                       ),
                                                     ],
                                                   ),
@@ -285,6 +324,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _getImage(VideoGameModel game,
       {VideoGameCallback? onWantsToUpdatePhoto}) {
+
     if (game.imageUrl.isNullOrEmpty() && game.imageBase64.isNullOrEmpty()) {
       print("no images at all");
       return getNoPictureImage(game,
@@ -293,7 +333,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (game.imageUrl.isNotNullNorEmpty()) {
       return InkWell(
-        child: ImageWidget(key: ValueKey(game.ean), game: game),
+        child: ImageWidget(key: ValueKey(game.ean), game: game, onTapped: (VideoGameModel game, _) {
+          onWantsToUpdatePhoto?.call(game, null);
+        },),
         onTap: () {
           Lgr.log("Tapped on photo in list ${game.title}");
           onWantsToUpdatePhoto?.call(game, null);
@@ -362,6 +404,8 @@ Future<String?> openGameEanScanner(BuildContext context,
     {VideoGamesCallback? onCurrentGamesUpdated,
     Function(String ean)? onGameNotFound,
     VideoGameCallback? onScannedGameAlreadyInCollection}) async {
+
+
   var res = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -454,10 +498,11 @@ Future<String?> openGameEanScanner(BuildContext context,
     final games = gameBox.values.toList();
     await gameBox.close();
     onCurrentGamesUpdated?.call(games);
-    await AppWriteHandler()
+    AppWriteHandler()
         .saveGameInDatabase(gameModel)
         .then((Map<String, dynamic>? a) {
       print("Game uploaded to API ${a.toString()}");
+      FirestoreHandler().userAddedAGameOrImage();
     });
     return res;
   } else {

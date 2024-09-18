@@ -8,9 +8,10 @@ import 'package:untitled/generic_video_game_model.dart';
 import 'package:untitled/utils/typedefs/typedefs.dart';
 
 class ImageWidget extends StatelessWidget {
-  ImageWidget({super.key, required this.game});
+  ImageWidget({super.key, required this.game, required this.onTapped});
 
   final VideoGameModel game;
+  final VideoGameCallback onTapped;
 
   final AppWriteHandler appWriteHandler = AppWriteHandler();
 
@@ -21,7 +22,7 @@ class ImageWidget extends StatelessWidget {
         imageUrl: game.imageUrl!,
         errorWidget: (_, __, ___) {
           return getNoPictureImage(
-            game,
+            game, onTapped: onTapped
           );
         },
       );

@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart';
 import 'package:dio/dio.dart';
+import 'package:untitled/firebase/firestor_handler.dart';
 import 'package:untitled/generic_video_game_model.dart';
 import 'package:untitled/local_storage/local_database_service.dart';
 import 'package:untitled/utils/logger/KeehooLogger.dart';
@@ -30,9 +31,15 @@ class AppWriteHandler {
             ?.setEndpoint(appWriteAddress) // Your Appwrite Endpoint
             .setProject('66ab491c0037a48bd7d7') //// Your project ID
             .setSession("2")
-            .setSelfSigned() // Use only on dev mode with a self-signed SSL cert
+        // .setSelfSigned() // Use only on dev mode with a self-signed SSL cert
         ;
 
+    // final account = Account(client);
+    // final d = await account.createOAuth2Session(
+    //     provider:
+    //     // OAuthProvider.facebook, scopes: ['email', 'public_profile']);
+    //     OAuthProvider.apple, scopes: ['.email', '.fullName']);
+    // print(d);
   }
 
   Future<List<Document>> getAllVideoGames() async {
@@ -62,7 +69,7 @@ class AppWriteHandler {
         ]);
 
     /// if documents of above query is empty, that means the game of such ean is not yet in the db.
-    return eanDocuments.documents.isEmpty;
+    return !eanDocuments.documents.isEmpty;
   }
 
   static const String dataBaseId = "retro";
@@ -74,11 +81,11 @@ class AppWriteHandler {
 
     final isGameAlreadyAdded = await isGameInRemoteDb(game);
 
-    if (isGameAlreadyAdded == false) {
+    if (isGameAlreadyAdded == true) {
       return game.toAppWriteJson();
     }
 
-    final d = Role.any();
+    final role = Role.any();
     try {
       Document result = await databases.createDocument(
         databaseId: dataBaseId,
@@ -86,7 +93,7 @@ class AppWriteHandler {
         documentId: game.ean!,
         data: game.toAppWriteJson(),
         permissions: [
-          Permission.write(d),
+          Permission.write(role),
         ], // optional
       );
 
@@ -154,9 +161,8 @@ class AppWriteHandler {
         ], // optional
       );
       LocalDatabaseService().updateLocalDbGame(game);
+      FirestoreHandler().userAddedAGameOrImage();
       return result.data;
-
-
     } catch (e, _) {
       Lgr.errorLog("Error Appwrite $e", exception: e);
       return null;
