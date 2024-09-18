@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:untitled/generic_video_game_model.dart';
 import 'package:untitled/utils/logger/KeehooLogger.dart';
 
 const _userCollection = "users";
@@ -62,7 +61,7 @@ class FirestoreHandler {
 
     if (userWithTheSameIdAndEmail.size == 0) {
       Lgr.log("Adding user as there's no users with the same id and email");
-      _firestore.collection(_userCollection).add(
+      _firestore.collection(_userCollection).doc(userId).set(
           <String, dynamic>{"userId": userId, "email": userEmail, "points": 0});
     }
   }

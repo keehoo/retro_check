@@ -1,9 +1,9 @@
 part of 'game_details_cubit.dart';
 
 class GameDetailsState extends Equatable {
-  const GameDetailsState({this.videoGameModel});
+  const GameDetailsState({required this.videoGameModel});
 
-  final VideoGameModel? videoGameModel;
+  final VideoGameModel videoGameModel;
 
   @override
   List<Object?> get props => [videoGameModel];

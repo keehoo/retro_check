@@ -11,6 +11,9 @@ class UserProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text("User profile"),
+      ),
       body: Center(
           child: Column(
         children: [

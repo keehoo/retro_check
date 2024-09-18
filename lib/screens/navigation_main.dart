@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:untitled/screens/game_swap/game_swap_screen.dart';
 import 'package:untitled/screens/games_tab_navigation_cubit.dart';
 
 class NavigationMain extends StatelessWidget {
@@ -33,7 +34,7 @@ class NavigationMain extends StatelessWidget {
                 context.read<GamesTabNavigationCubit>().onIndexChanged(destination);
                 switch (destination) {
                   case 0:
-                    context.go(
+                    context.push(
                       "/"
                     );
                     break;
@@ -44,10 +45,10 @@ class NavigationMain extends StatelessWidget {
                     context.push("/c");
                     break;
                   case 3:
-                    context.push("/b");
+                    context.push("/${GameSwapScreen.routeName}");
                     break;
                   case 4:
-                    context.go("/user_profile");
+                    context.push("/user_profile");
                     break;
                 }
               },

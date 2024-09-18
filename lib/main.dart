@@ -17,11 +17,14 @@ import 'package:untitled/screens/game_details/game_details_screen.dart';
 import 'package:untitled/screens/game_input/game_input_cubit.dart';
 import 'package:untitled/screens/game_input/game_input_screen.dart';
 import 'package:untitled/screens/game_input/platform_selection/platform_selection_screen.dart';
+import 'package:untitled/screens/game_swap/game_swap_cubit.dart';
+import 'package:untitled/screens/game_swap/game_swap_screen.dart';
 import 'package:untitled/screens/games_tab_navigation_cubit.dart';
 import 'package:untitled/screens/home_screen.dart';
 import 'package:untitled/screens/home_screen_cubit.dart';
 import 'package:untitled/screens/login/login_screen.dart';
 import 'package:untitled/screens/navigation_main.dart';
+import 'package:untitled/screens/user_profile/user_profile_cubit.dart';
 import 'package:untitled/screens/user_profile/user_profile_screen.dart';
 import 'package:untitled/utils/logger/KeehooLogger.dart';
 
@@ -83,7 +86,8 @@ class MyApp extends StatelessWidget {
                 ?.copyWith(fontWeight: FontWeight.w900),
             titleTextStyle: Theme.of(context).textTheme.bodyMedium),
         textTheme: TextTheme(
-          labelLarge: GoogleFonts.raleway(fontSize: 24, color: Colors.black, fontWeight: FontWeight.w700),
+          labelLarge: GoogleFonts.raleway(
+              fontSize: 24, color: Colors.black, fontWeight: FontWeight.w700),
           labelSmall: GoogleFonts.raleway(
               fontSize: 8, color: Colors.black, fontWeight: FontWeight.w400),
           titleLarge: GoogleFonts.raleway(
@@ -173,26 +177,44 @@ class MyApp extends StatelessWidget {
               )),
             ),
             GoRoute(
+              path: "/${GameSwapScreen.routeName}",
+              pageBuilder: (context, GoRouterState b) => NoTransitionPage(
+                  child: BlocProvider(
+                create: (context) => GameSwapCubit(),
+                child: const GameSwapScreen(),
+              )),
+            ),
+            GoRoute(
               path: "/user_profile",
-              pageBuilder: (context, GoRouterState b) =>
-                  const NoTransitionPage(child: UserProfileScreen()),
+              pageBuilder: (context, GoRouterState b) => NoTransitionPage(
+                  child: BlocProvider(
+                create: (context) => UserProfileCubit()..getUserPoints(),
+                child: const UserProfileScreen(),
+              )),
             ),
           ]),
       GoRoute(
           path: "/${GameDetailsScreen.routeName}",
           pageBuilder: (context, routerState) {
-            final videoGame = routerState.extra as VideoGameModel?;
-            return NoTransitionPage(
-                child: BlocProvider(
-              create: (context) => GameDetailsCubit(videoGame),
-              child: const GameDetailsScreen(),
-            ));
+            if (routerState.extra is VideoGameModel) {
+              final videoGame = routerState.extra as VideoGameModel;
+              return NoTransitionPage(
+                  child: BlocProvider(
+                create: (context) => GameDetailsCubit(videoGame),
+                child: const GameDetailsScreen(),
+              ));
+            } else {
+              // handle error case
+              return const TransitionPage(
+                  child: Center(
+                child: Text("Oops"),
+              ));
+            }
           }),
       GoRoute(
           path: "/login",
           pageBuilder: (context, routerState) {
-            return  NoTransitionPage(
-                child: LoginScreen());
+            return NoTransitionPage(child: LoginScreen());
           }),
     ],
   );
